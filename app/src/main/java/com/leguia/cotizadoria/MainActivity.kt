@@ -3,88 +3,167 @@ package com.leguia.cotizadoria
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+
 import com.leguia.cotizadoria.data.AppDatabase
+import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.CotizadorRepository
-import com.leguia.cotizadoria.screens.*
+import com.leguia.cotizadoria.screens.PantallaFormularioServicio
+import com.leguia.cotizadoria.screens.PantallaInicio
+import com.leguia.cotizadoria.screens.PantallaLoginAdmin
+import com.leguia.cotizadoria.screens.PantallaPanelAdmin
+import com.leguia.cotizadoria.screens.PantallaResumenPrecio
+import com.leguia.cotizadoria.screens.PantallaSeleccionServicio
 import com.leguia.cotizadoria.viewmodel.CotizadorViewModel
+
+enum class DestinoPantalla {
+    INICIO,
+    LOGIN_ADMIN,
+    PANEL_ADMIN,
+    SELECCION_SERVICIO,
+    FORMULARIO_SERVICIO,
+    RESUMEN_PRECIO
+}
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: CotizadorViewModel
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-        // Inicialización de Room y Repositorio
-        val database = AppDatabase.obtenerBaseDatos(this)
-        val repository = CotizadorRepository(database.servicioDao())
-
-        // Inicialización del ViewModel mediante Factory
-        viewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return CotizadorViewModel(repository) as T
-            }
-        })[CotizadorViewModel::class.java]
+        val db = AppDatabase.getDatabase(applicationContext)
+        val repository = CotizadorRepository(
+            servicioDao = db.servicioDao(),
+            cotizacionDao = db.cotizacionDao(),
+            parametroPrecioDao = db.parametroPrecioDao(),
+            trazabilidadDao = db.trazabilidadDao(),
+            registroErrorDao = db.registroErrorDao()
+        )
+        val viewModel = CotizadorViewModel(repository)
 
         setContent {
-            MaterialTheme {
+            var pantallaActual by remember { mutableStateOf(DestinoPantalla.INICIO) }
+
+            var operadorActual by remember { mutableStateOf("Operador 1") }
+            var esModoOffline by remember { mutableStateOf(false) }
+            var servicioIdSeleccionado by remember { mutableIntStateOf(1) }
+
+            // Definición correcta del estado mutable opcional con Kotlin Compose
+            var cotizacionGenerada: CotizacionEntity? by remember { mutableStateOf(null) }
+
+            val listaServicios by viewModel.listaServiciosBaseDatos.collectAsState()
+            val listaCotizaciones by viewModel.listaCotizaciones.collectAsState()
+
+            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
-                    AppCotizadorNav(viewModel)
+                    when (pantallaActual) {
+                        DestinoPantalla.INICIO -> {
+                            PantallaInicio(
+                                operadorSeleccionado = operadorActual,
+                                esModoOffline = esModoOffline,
+                                onCambiarOperador = { nuevoOperador -> operadorActual = nuevoOperador },
+                                onAlternarModoRed = { esModoOffline = !esModoOffline },
+                                onIniciarNuevaCotizacion = { pantallaActual = DestinoPantalla.SELECCION_SERVICIO },
+                                onIrAPanelAdmin = { pantallaActual = DestinoPantalla.LOGIN_ADMIN }
+                            )
+                        }
+
+                        DestinoPantalla.LOGIN_ADMIN -> {
+                            PantallaLoginAdmin(
+                                onAccesoConcedido = { pantallaActual = DestinoPantalla.PANEL_ADMIN },
+                                onVolver = { pantallaActual = DestinoPantalla.INICIO }
+                            )
+                        }
+
+                        DestinoPantalla.PANEL_ADMIN -> {
+                            PantallaPanelAdmin(
+                                listaCotizaciones = listaCotizaciones,
+                                onVolver = { pantallaActual = DestinoPantalla.INICIO }
+                            )
+                        }
+
+                        DestinoPantalla.SELECCION_SERVICIO -> {
+                            PantallaSeleccionServicio(
+                                listaServicios = listaServicios,
+                                onServicioSeleccionado = { servicio ->
+                                    servicioIdSeleccionado = servicio.id
+                                    pantallaActual = DestinoPantalla.FORMULARIO_SERVICIO
+                                },
+                                onVolver = { pantallaActual = DestinoPantalla.INICIO }
+                            )
+                        }
+
+                        DestinoPantalla.FORMULARIO_SERVICIO -> {
+                            PantallaFormularioServicio(
+                                servicioId = servicioIdSeleccionado,
+                                operador = operadorActual,
+                                onGuardarFormulario = { cotizacionIngresada ->
+                                    val largo = cotizacionIngresada.medidaLargo ?: 1.0
+                                    val ancho = cotizacionIngresada.medidaAncho ?: 1.0
+                                    val alto = cotizacionIngresada.medidaAlto ?: 1.0
+                                    val tarifaCalculada = (largo * ancho * alto) * 15.0
+
+                                    // Asignación directa limpia
+                                    cotizacionGenerada = cotizacionIngresada.copy(
+                                        precioReferencial = tarifaCalculada,
+                                        precioFinal = tarifaCalculada
+                                    )
+                                    pantallaActual = DestinoPantalla.RESUMEN_PRECIO
+                                }
+                            )
+                        }
+
+                        DestinoPantalla.RESUMEN_PRECIO -> {
+                            val cotizacionValida = cotizacionGenerada ?: CotizacionEntity(
+                                id = 0,
+                                codigoCotizacion = "COT-000",
+                                servicioId = servicioIdSeleccionado,
+                                materialId = null,
+                                operador = operadorActual,
+                                requerimientoCliente = "Sin datos registrados",
+                                interpretacionIaJson = null,
+                                corregidoPorHumano = false,
+                                medidaLargo = 0.0,
+                                medidaAncho = 0.0,
+                                medidaAlto = 0.0,
+                                precioReferencial = 0.0,
+                                descuentoMonto = 0.0,
+                                descuentoPorcentaje = 0.0,
+                                precioFinal = 0.0,
+                                estado = "PENDIENTE",
+                                fechaHoraInicio = System.currentTimeMillis(),
+                                fechaHoraFin = null,
+                                esModoOffline = esModoOffline
+                            )
+
+                            PantallaResumenPrecio(
+                                cotizacion = cotizacionValida,
+                                onFinalizarCotizacion = {
+                                    viewModel.registrarCotizacion(cotizacionValida) {
+                                        pantallaActual = DestinoPantalla.INICIO
+                                    }
+                                },
+                                onVolver = { pantallaActual = DestinoPantalla.FORMULARIO_SERVICIO }
+                            )
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun AppCotizadorNav(viewModel: CotizadorViewModel) {
-    when (viewModel.pantallaActual) {
-        "INICIO" -> PantallaInicio(
-            operadorActual = viewModel.operadorSeleccionado,
-            esOffline = viewModel.esModoOffline,
-            onCambiarOperador = { viewModel.cambiarOperador(it) },
-            onCambiarModoRed = { viewModel.alternarModoRed(it) },
-            onNavegarSeleccion = { viewModel.navegarA("SELECCION_SERVICIO") },
-            onNavegarAdmin = { viewModel.navegarA("LOGIN_ADMIN") }
-        )
-        "SELECCION_SERVICIO" -> PantallaSeleccionServicio(
-            operador = viewModel.operadorSeleccionado,
-            serviciosFlow = viewModel.listaServiciosBaseDatos,
-            onServicioSeleccionado = { servicio -> viewModel.iniciarNuevaCotizacion(servicio) },
-            onVolver = { viewModel.navegarA("INICIO") }
-        )
-        "FORMULARIO_DATOS" -> PantallaFormularioServicio(
-            servicio = viewModel.servicioSeleccionado,
-            cotizacion = viewModel.cotizacionActual,
-            esOffline = viewModel.esModoOffline,
-            onProcesarIA = { prompt -> viewModel.procesarEntradaIa(prompt) },
-            onContinuar = { resumen, manuales -> viewModel.guardarFormulario(resumen, manuales) },
-            onVolver = { viewModel.navegarA("SELECCION_SERVICIO") }
-        )
-        "RESUMEN_PRECIO" -> PantallaResumenPrecio(
-            cotizacion = viewModel.cotizacionActual,
-            onCotizacionFinalizada = { desc, precioFinal, obs -> viewModel.finalizarCotizacion(desc, precioFinal, obs) },
-            onVolver = { viewModel.navegarA("FORMULARIO_DATOS") }
-        )
-        "LOGIN_ADMIN" -> PantallaLoginAdmin(
-            onAccesoConcedido = { viewModel.navegarA("PANEL_ADMIN") },
-            onVolver = { viewModel.navegarA("INICIO") }
-        )
-        "PANEL_ADMIN" -> PantallaPanelAdmin(
-            listaCotizaciones = viewModel.listaCotizaciones.toList(),
-            onEliminarRegistro = { reg -> viewModel.eliminarCotizacionConPin(reg) },
-            onVolver = { viewModel.navegarA("INICIO") }
-        )
     }
 }

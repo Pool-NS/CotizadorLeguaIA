@@ -1,66 +1,77 @@
 package com.leguia.cotizadoria.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.leguia.cotizadoria.components.BotonOpcionServicio
-import com.leguia.cotizadoria.data.CotizadorOperador
-import com.leguia.cotizadoria.data.ServicioEntity
-import kotlinx.coroutines.flow.StateFlow
 
-@OptIn(ExperimentalMaterial3Api::class)
+import com.leguia.cotizadoria.data.ServicioEntity
+
 @Composable
 fun PantallaSeleccionServicio(
-    operador: CotizadorOperador,
-    serviciosFlow: StateFlow<List<ServicioEntity>>,
-    onServicioSeleccionado: (String) -> Unit,
+    listaServicios: List< ServicioEntity >,
+    onServicioSeleccionado: (ServicioEntity) -> Unit,
     onVolver: () -> Unit
 ) {
-    val listaServicios by serviciosFlow.collectAsState()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Seleccione un Servicio",
+            style = MaterialTheme.typography.headlineMedium
+        )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Servicios | Cotiza: ${operador.nombreLegible.split(" ")[0]}") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(
+            modifier = Modifier.weight(1f)
         ) {
-            Text(text = "Selecciona el tipo de trabajo (Room SQLite):", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-
-            if (listaServicios.isEmpty()) {
-                CircularProgressIndicator()
-            } else {
-                listaServicios.forEach { servicio ->
-                    BotonOpcionServicio(
-                        titulo = servicio.nombre,
-                        descripcion = "Cargar parámetros base de ${servicio.nombre}"
+            items(listaServicios) { servicio ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onServicioSeleccionado(servicio) }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        onServicioSeleccionado(servicio.nombre)
+                        Text(
+                            text = servicio.nombre,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (!servicio.descripcion.isNullOrEmpty()) {
+                            Text(
+                                text = servicio.descripcion,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(onClick = onVolver, modifier = Modifier.fillMaxWidth()) {
-                Text("Volver al inicio")
-            }
+        OutlinedButton(
+            onClick = onVolver,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Volver")
         }
     }
 }

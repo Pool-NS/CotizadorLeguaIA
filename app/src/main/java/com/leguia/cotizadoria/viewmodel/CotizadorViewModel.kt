@@ -1,111 +1,75 @@
 package com.leguia.cotizadoria.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.leguia.cotizadoria.data.CotizacionRegistro
-import com.leguia.cotizadoria.data.CotizadorOperador
+import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.CotizadorRepository
-import com.leguia.cotizadoria.data.EstadoCotizacion
+import com.leguia.cotizadoria.data.EventoTrazabilidadEntity
+import com.leguia.cotizadoria.data.RegistroErrorEntity
 import com.leguia.cotizadoria.data.ServicioEntity
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-class CotizadorViewModel(private val repository: CotizadorRepository) : ViewModel() {
+class CotizadorViewModel(
+    private val repository: CotizadorRepository
+) : ViewModel() {
 
-    // Flujo que lee los servicios desde la base de datos SQLite en tiempo real
-    val listaServiciosBaseDatos: StateFlow<List<ServicioEntity>> = repository.serviciosActivos
+    // El compilador infiere automáticamente el StateFlow
+    val listaServiciosBaseDatos = repository.obtenerServicios()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    var pantallaActual by mutableStateOf("INICIO")
-        private set
-
-    var operadorSeleccionado by mutableStateOf(CotizadorOperador.ANTHONY)
-        private set
-
-    var servicioSeleccionado by mutableStateOf("")
-        private set
-
-    var cotizacionActual by mutableStateOf<CotizacionRegistro?>(null)
-        private set
-
-    var esModoOffline by mutableStateOf(false)
-        private set
-
-    val listaCotizaciones = mutableStateListOf<CotizacionRegistro>()
-
-    fun cambiarOperador(operador: CotizadorOperador) {
-        operadorSeleccionado = operador
-    }
-
-    fun alternarModoRed(offline: Boolean) {
-        esModoOffline = offline
-    }
-
-    fun iniciarNuevaCotizacion(servicio: String) {
-        servicioSeleccionado = servicio
-        val nuevaCotizacion = CotizacionRegistro(
-            id = "COT-${System.currentTimeMillis().toString().takeLast(6)}",
-            cotizador = operadorSeleccionado.nombreLegible,
-            servicio = servicio
+    // Lista de cotizaciones registradas
+    val listaCotizaciones = repository.obtenerTodasLasCotizaciones()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
-        nuevaCotizacion.registrarEvento("inicio_cotizacion")
-        cotizacionActual = nuevaCotizacion
-        pantallaActual = "FORMULARIO_DATOS"
-    }
 
-    fun procesarEntradaIa(prompt: String) {
-        cotizacionActual?.registrarEvento("solicitud_enviada_ia")
+    // Guardar una nueva cotización
+    fun registrarCotizacion(
+        cotizacion: CotizacionEntity,
+        onResultado: (Long) -> Unit
+    ) {
+        viewModelScope.launch {
+            val idGenerado = repository.guardarCotizacion(cotizacion)
 
-        if (esModoOffline) {
-            cotizacionActual?.datosInterpretadosIA = "IA NO DISPONIBLE (OFFLINE)"
-            cotizacionActual?.registrarEvento("fallback_offline_ia")
-        } else {
-            cotizacionActual?.datosInterpretadosIA = "Interpretado por IA: $prompt"
-            cotizacionActual?.registrarEvento("respuesta_recibida_ia")
+            // Registrar trazabilidad automática
+            repository.registrarEvento(
+                EventoTrazabilidadEntity(
+                    cotizacionId = idGenerado.toInt(),
+                    tipoEvento = "CREACION_COTIZACION",
+                    descripcion = "Cotización ${cotizacion.codigoCotizacion} creada exitosamente.",
+                    timestamp = System.currentTimeMillis(),
+                    operador = cotizacion.operador
+                )
+            )
+            onResultado(idGenerado)
         }
     }
 
-    fun guardarFormulario(resumenSpecs: String, datosManuales: String) {
-        cotizacionActual?.let { reg ->
-            reg.registrarEvento("ingreso_requerimiento")
-            reg.caracteristicasIngresadas = resumenSpecs
-            reg.datosCorregidosManual = datosManuales
-            reg.registrarEvento("datos_confirmados")
-            reg.precioReferencial = 150.00
-            reg.registrarEvento("precio_referencial_generado")
+    // Registrar errores capturados durante la cotización
+    fun capturarError(
+        cotizacionId: Int,
+        codigoError: String,
+        descripcion: String,
+        atribuibleASistema: Boolean
+    ) {
+        viewModelScope.launch {
+            repository.registrarError(
+                RegistroErrorEntity(
+                    cotizacionId = cotizacionId,
+                    codigoError = codigoError,
+                    descripcion = descripcion,
+                    atribuibleASistema = atribuibleASistema,
+                    timestamp = System.currentTimeMillis()
+                )
+            )
         }
-        pantallaActual = "RESUMEN_PRECIO"
-    }
-
-    fun finalizarCotizacion(descuento: Double, precioFinal: Double, observaciones: String) {
-        cotizacionActual?.let { reg ->
-            reg.descuento = descuento
-            reg.registrarEvento("descuento_registrado")
-            reg.precioFinal = precioFinal
-            reg.observaciones = observaciones
-            reg.horaFin = System.currentTimeMillis()
-            reg.estado = EstadoCotizacion.CONFIRMADA
-            reg.registrarEvento("cotizacion_finalizada")
-
-            listaCotizaciones.add(reg)
-        }
-        pantallaActual = "INICIO"
-    }
-
-    fun eliminarCotizacionConPin(cotizacion: CotizacionRegistro) {
-        listaCotizaciones.remove(cotizacion)
-    }
-
-    fun navegarA(pantalla: String) {
-        pantallaActual = pantalla
     }
 }
