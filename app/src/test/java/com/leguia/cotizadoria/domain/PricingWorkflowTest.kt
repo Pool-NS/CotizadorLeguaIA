@@ -12,12 +12,20 @@ class PricingWorkflowTest {
         assertEquals(PricingOutcome.Calculated(PriceResult(30.0, 5.0, 25.0)), result)
     }
 
-    @Test fun sizePriceKeysSeparateClosedAndOpenTentsAndDifferentDimensions() {
-        val openThreeByTwo = DimensionPriceKey.forSize(3.0, 2.0, "ABIERTA")
-        val closedThreeByTwo = DimensionPriceKey.forSize(3.0, 2.0, "CERRADA")
-        val openTwoByTwo = DimensionPriceKey.forSize(2.0, 2.0, "ABIERTA")
+    @Test fun sizePriceKeysSeparateMaterialTentTypeAndDimensions() {
+        val openThreeByTwo = DimensionPriceKey.forSize(3.0, 2.0, "ABIERTA", "Lona")
+        val closedThreeByTwo = DimensionPriceKey.forSize(3.0, 2.0, "CERRADA", "Lona")
+        val openTwoByTwo = DimensionPriceKey.forSize(2.0, 2.0, "ABIERTA", "Lona")
+        val oxfordThreeByTwo = DimensionPriceKey.forSize(3.0, 2.0, "ABIERTA", "Oxford")
         assertTrue(openThreeByTwo != closedThreeByTwo)
         assertTrue(openThreeByTwo != openTwoByTwo)
+        assertTrue(openThreeByTwo != oxfordThreeByTwo)
+        assertEquals(openThreeByTwo, DimensionPriceKey.forSize(3.0, 2.0, "ABIERTA", "LÓNA"))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun materialIsRequiredForApprovedPriceKey() {
+        DimensionPriceKey.forSize(3.0, 2.0, "BASE", " ")
     }
 
     @Test fun missingParametersNeverInventAPrice() {

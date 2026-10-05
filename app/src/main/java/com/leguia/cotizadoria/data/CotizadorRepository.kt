@@ -68,8 +68,8 @@ class CotizadorRepository(
     fun obtenerParametrosPorServicio(servicioId: Int): Flow< List< ParametroPrecioEntity > > =
         parametroPrecioDao.obtenerPorServicio(servicioId)
     fun obtenerTodosLosParametrosActivos() = parametroPrecioDao.obtenerTodosActivos()
-    suspend fun guardarTarifaAprobada(servicioId: Int, largo: Double, ancho: Double, variant: String, precio: Double) =
-        parametroPrecioDao.guardarTarifaAprobada(servicioId, DimensionPriceKey.forSize(largo, ancho, variant), precio)
+    suspend fun guardarTarifaAprobada(servicioId: Int, largo: Double, ancho: Double, variant: String, material: String, precio: Double) =
+        parametroPrecioDao.guardarTarifaAprobada(servicioId, DimensionPriceKey.forSize(largo, ancho, variant, material), precio)
 
     // Trazabilidad y Errores
     suspend fun registrarEvento(evento: EventoTrazabilidadEntity) = trazabilidadDao.insertarEvento(evento)

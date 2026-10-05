@@ -22,7 +22,9 @@ Thumbs.db
 secrets.properties
 .env
 .env.*
+!**/.env.example
 
 google-services.json
 
 .kotlin/
+.gradle-home/

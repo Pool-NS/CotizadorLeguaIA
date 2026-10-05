@@ -4,13 +4,13 @@ Aplicación Android en Kotlin/Compose con persistencia local Room. El repositori
 
 ## Estado actual
 
-La app contiene navegación básica, formulario, resumen, almacenamiento de cotizaciones e historial. Consulte [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para límites y riesgos. Hay captura de voz del reconocedor Android y extracción determinista con revisión humana; IA generativa y sincronización reales no están integradas. Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK: `app/build/outputs/apk/debug/app-debug.apk`. No incluya claves en la app.
+La app incluye cotización local, tarifas, inventario, seguimiento, captura de voz y revisión humana de campos. El módulo de IA generativa requiere el backend local y una clave API configurada fuera del repositorio; no se entrega una clave ni backend público. Consulta [docs/AI.md](docs/AI.md), [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK Debug: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Requisitos y ejecución
 
-Android Studio compatible con AGP 8.7.2, JDK 17 y Android SDK 35. Abra el directorio raíz en Android Studio o ejecute `./gradlew test` y `./gradlew lint` en un entorno con dependencias Gradle disponibles. Última validación: test Debug/Release aprobados (15 pruebas), lint aprobado con 37 advertencias, y APK Debug generado. SonarQube está configurado, pero el análisis y Quality Gate están pendientes porque falta una instancia y credenciales. Reportes en `app/build/reports/` y `app/build/test-results/`.
+Android Studio compatible con AGP 8.7.2, JDK 17 y Android SDK 35. Abre el directorio raíz en Android Studio. El backend se ejecuta aparte; instrucciones en `backend/api/README.md`. La última ejecución de test/lint anterior al módulo IA se documenta en `qa/FINAL_QUALITY_REPORT.md`; falta volver a validar este cambio y probarlo en dispositivo. SonarQube está configurado, pero el análisis y Quality Gate requieren una instancia y credenciales.
 
-En `Panel de Administración` el jefe puede guardar precios aprobados por servicio, tamaño exacto y tipo de carpa (abierta/cerrada), y registrar ingresos de materiales. Las carpas cerradas capturan ventanas y puertas; el tapizado se especifica como `Tapizado de moto` con tipo/modelo. La app no solicita altura y solo aplica coincidencias de tarifa exactas; si no existe una tarifa, la solicitud queda pendiente para revisión.
+En `Panel de Administración` el jefe puede guardar precios aprobados por servicio, tamaño exacto, material y tipo de carpa (abierta/cerrada), y registrar ingresos de materiales. Las carpas cerradas capturan ventanas y puertas; el tapizado se especifica como `Tapizado de moto` con tipo/modelo. La app no solicita altura y solo aplica coincidencias exactas de servicio, tamaño, material y variante; si falta un material o su tarifa, la solicitud queda pendiente para revisión.
 
 ## Datos y modelo
 
@@ -18,7 +18,7 @@ La base local es Room. Migraciones están en `app/src/main/.../data/AppDatabase.
 
 ## IA y predicción
 
-La captura por voz usa el reconocedor de Android y un parser local determinista para servicio/medidas nombradas; verifica manualmente antes de guardar. IA generativa real no está integrada. El predictor no está conectado a la app. El material predictivo sintético no representa resultados de campo de Leguía.
+La captura por voz usa el reconocedor de Android. El texto puede enviarse al backend generativo local para proponer campos estructurados y pedir revisión humana. No está configurado el servicio sin una clave API local. El predictor logístico es un experimento separado entrenado con datos sintéticos; no está conectado a la app y no representa resultados de campo de Leguía.
 
 ## Calidad y seguridad
 

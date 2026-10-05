@@ -36,7 +36,7 @@ fun PantallaPanelAdmin(
     listaStock: List<StockMaterialRow>,
     servicios: List<ServicioEntity>,
     tarifas: List<ParametroPrecioEntity>,
-    onGuardarTarifa: (Int, Double, Double, String, Double) -> Unit,
+    onGuardarTarifa: (Int, Double, Double, String, String, Double) -> Unit,
     onRegistrarIngreso: (String, String, Double, String, (String?) -> Unit) -> Unit,
     onRegistrarResultado: (CotizacionEntity, QuoteStatus) -> Unit,
     onVolver: () -> Unit

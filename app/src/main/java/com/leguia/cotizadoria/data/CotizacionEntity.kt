@@ -53,5 +53,6 @@ data class CotizacionEntity(
     val tipoMoto: String? = null,
     val tipoCarpa: String? = null,
     val cantidadVentanas: Int? = null,
-    val cantidadPuertas: Int? = null
+    val cantidadPuertas: Int? = null,
+    val materialDescripcion: String? = null
 )

@@ -4,6 +4,8 @@ data class RequirementInterpretation(
     val serviceSuggestion: String?,
     val dimensions: Map<String, Double>,
     val characteristics: Map<String, String>,
+    val missingFields: List<String> = emptyList(),
+    val ambiguities: List<String> = emptyList(),
     val reviewRequired: Boolean = true
 )
 

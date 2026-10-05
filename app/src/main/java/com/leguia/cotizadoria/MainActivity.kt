@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 import com.leguia.cotizadoria.data.AppDatabase
+import com.leguia.cotizadoria.ai.BackendGenerativeAiClient
 import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.CotizadorRepository
 import com.leguia.cotizadoria.domain.SpokenRequirementParser
@@ -66,7 +67,7 @@ class MainActivity : ComponentActivity() {
             inventarioDao = db.inventarioDao(),
             prediccionDao = db.prediccionDao()
         )
-        val viewModel = CotizadorViewModel(repository)
+        val viewModel = CotizadorViewModel(repository, BackendGenerativeAiClient(BuildConfig.AI_BACKEND_URL))
 
         setContent {
             var pantallaActual by remember { mutableStateOf(DestinoPantalla.INICIO) }
@@ -84,6 +85,7 @@ class MainActivity : ComponentActivity() {
             val listaCotizaciones by viewModel.listaCotizaciones.collectAsState()
             val listaStock by viewModel.listaStock.collectAsState()
             val tarifasActivas by viewModel.tarifasActivas.collectAsState()
+            val aiInterpretationState by viewModel.aiInterpretationState.collectAsState()
             val reconocedorLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
             ) { resultado ->
@@ -143,8 +145,8 @@ class MainActivity : ComponentActivity() {
                                 listaStock = listaStock,
                                 servicios = listaServicios,
                                 tarifas = tarifasActivas,
-                                onGuardarTarifa = { servicioId, largo, ancho, variante, precio ->
-                                    viewModel.guardarTarifaAprobada(servicioId, largo, ancho, variante, precio) { error ->
+                                onGuardarTarifa = { servicioId, largo, ancho, variante, material, precio ->
+                                    viewModel.guardarTarifaAprobada(servicioId, largo, ancho, variante, material, precio) { error ->
                                         Toast.makeText(this@MainActivity, error, Toast.LENGTH_LONG).show()
                                     }
                                 },
@@ -162,12 +164,14 @@ class MainActivity : ComponentActivity() {
                             PantallaSeleccionServicio(
                                 listaServicios = listaServicios,
                                 onServicioSeleccionado = { servicio ->
+                                    viewModel.limpiarInterpretacionIa()
                                     servicioIdSeleccionado = servicio.id
                                     transcripcionVozInicial = null
                                     pantallaActual = DestinoPantalla.FORMULARIO_SERVICIO
                                 },
                                 onCapturarPorVoz = {
                                     mensajeVoz = null
+                                    viewModel.limpiarInterpretacionIa()
                                     val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                                         putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-CO")
@@ -191,11 +195,17 @@ class MainActivity : ComponentActivity() {
                                 operador = operadorActual,
                                 esModoOffline = esModoOffline,
                                 transcripcionInicial = transcripcionVozInicial,
+                                interpretacionIA = aiInterpretationState.result,
+                                interpretacionIALoading = aiInterpretationState.loading,
+                                errorIA = aiInterpretationState.error,
+                                onInterpretarRequerimiento = viewModel::interpretarRequerimiento,
                                 onGuardarFormulario = { cotizacionIngresada ->
                                     val priceKey = cotizacionIngresada.medidaLargo?.let { length ->
                                         cotizacionIngresada.medidaAncho?.let { width ->
                                             val variant = cotizacionIngresada.tipoCarpa ?: "BASE"
-                                            runCatching { DimensionPriceKey.forSize(length, width, variant) }.getOrNull()
+                                            runCatching {
+                                                DimensionPriceKey.forSize(length, width, variant, cotizacionIngresada.materialDescripcion.orEmpty())
+                                            }.getOrNull()
                                         }
                                     }
                                     val activeRate = tarifasActivas.firstOrNull {
@@ -217,7 +227,10 @@ class MainActivity : ComponentActivity() {
                                     }
                                     pantallaActual = DestinoPantalla.RESUMEN_PRECIO
                                 },
-                                onVolver = { pantallaActual = DestinoPantalla.SELECCION_SERVICIO }
+                                onVolver = {
+                                    viewModel.limpiarInterpretacionIa()
+                                    pantallaActual = DestinoPantalla.SELECCION_SERVICIO
+                                }
                             )
                         }
 

@@ -1,3 +1,15 @@
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) localPropertiesFile.inputStream().use { load(it) }
+}
+val debugAiBackendUrl = localProperties.getProperty("aiBackendUrl", "http://10.0.2.2:8000")
+val releaseAiBackendUrl = localProperties.getProperty("aiBackendUrlRelease", "")
+require(releaseAiBackendUrl.isBlank() || releaseAiBackendUrl.startsWith("https://")) {
+    "aiBackendUrlRelease must use HTTPS."
+}
+
 plugins {
     alias(libs.plugins.android.application)
     id("org.jetbrains.kotlin.android")
@@ -20,8 +32,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "AI_BACKEND_URL", "\"${debugAiBackendUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "AI_BACKEND_URL", "\"${releaseAiBackendUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -42,6 +58,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

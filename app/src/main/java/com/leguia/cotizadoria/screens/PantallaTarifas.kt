@@ -31,12 +31,13 @@ import com.leguia.cotizadoria.data.ServicioEntity
 fun PantallaTarifas(
     servicios: List<ServicioEntity>,
     tarifas: List<ParametroPrecioEntity>,
-    onGuardar: (Int, Double, Double, String, Double) -> Unit,
+    onGuardar: (Int, Double, Double, String, String, Double) -> Unit,
     onVolver: () -> Unit
 ) {
     val lengths = remember { mutableStateMapOf<Int, String>() }
     val widths = remember { mutableStateMapOf<Int, String>() }
     val prices = remember { mutableStateMapOf<Int, String>() }
+    val materials = remember { mutableStateMapOf<Int, String>() }
     val variants = remember { mutableStateMapOf<Int, String>() }
     var error by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -55,10 +56,16 @@ fun PantallaTarifas(
                         Text(servicio.nombre, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
                         if (serviceRates.isEmpty()) Text("No hay tamaños con precio aprobado.")
                         serviceRates.forEach { rate ->
-                            val keyParts = rate.concepto.removePrefix("MEDIDA:").split(':', limit = 2)
+                            val keyParts = rate.concepto.removePrefix("MEDIDA:").split(':', limit = 3)
                             val variant = keyParts.getOrNull(0).orEmpty()
-                            val size = keyParts.getOrNull(1).orEmpty().replace('x', '×')
-                            val label = if (servicio.nombre.equals("Carpas", ignoreCase = true)) "$variant · $size" else size
+                            val isLegacyRate = keyParts.size < 3
+                            val material = if (isLegacyRate) "Material sin definir" else keyParts.getOrNull(1).orEmpty()
+                            val size = (if (isLegacyRate) keyParts.getOrNull(1) else keyParts.getOrNull(2)).orEmpty().replace('x', '×')
+                            val label = listOfNotNull(
+                                variant.takeIf { servicioEsCarpas(servicio.nombre) && it != "BASE" },
+                                material,
+                                size
+                            ).joinToString(" · ")
                             Text("$label — S/ ${rate.precioUnitario}", style = MaterialTheme.typography.bodyLarge)
                         }
                         if (servicioEsCarpas(servicio.nombre)) {
@@ -87,6 +94,14 @@ fun PantallaTarifas(
                             )
                         }
                         OutlinedTextField(
+                            value = materials[servicio.id].orEmpty(),
+                            onValueChange = { materials[servicio.id] = it; error = null },
+                            label = { Text("Material exacto") },
+                            placeholder = { Text("Ejemplo: lona, tela Oxford") },
+                            supportingText = { Text("La tarifa se aplicará solo a este material. Usa el mismo nombre en cada cotización.") },
+                            modifier = Modifier.fillMaxWidth(), singleLine = true
+                        )
+                        OutlinedTextField(
                             value = prices[servicio.id].orEmpty(),
                             onValueChange = { prices[servicio.id] = it; error = null },
                             label = { Text("Precio aprobado (S/)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
@@ -98,11 +113,12 @@ fun PantallaTarifas(
                             when {
                                 length == null || !length.isFinite() || length <= 0.0 -> error = "Ingresa un largo mayor que cero."
                                 width == null || !width.isFinite() || width <= 0.0 -> error = "Ingresa un ancho mayor que cero."
+                                materials[servicio.id].isNullOrBlank() -> error = "Indica el material para asociar el precio aprobado."
                                 price == null || !price.isFinite() || price <= 0.0 -> error = "Ingresa el precio aprobado mayor que cero."
                                 else -> {
                                     val variant = if (servicioEsCarpas(servicio.nombre)) variants[servicio.id] ?: "ABIERTA" else "BASE"
-                                    onGuardar(servicio.id, length, width, variant, price)
-                                    lengths.remove(servicio.id); widths.remove(servicio.id); prices.remove(servicio.id); error = null
+                                    onGuardar(servicio.id, length, width, variant, materials.getValue(servicio.id).trim(), price)
+                                    lengths.remove(servicio.id); widths.remove(servicio.id); prices.remove(servicio.id); materials.remove(servicio.id); error = null
                                 }
                             }
                         }, modifier = Modifier.fillMaxWidth()) { Text("Guardar precio de este tamaño") }

@@ -38,15 +38,19 @@ object QuotePricingCalculator {
 }
 
 object DimensionPriceKey {
-    fun forSize(length: Double, width: Double, variant: String = "BASE"): String {
+    fun forSize(length: Double, width: Double, variant: String, material: String): String {
         require(length.isFinite() && length > 0.0 && width.isFinite() && width > 0.0)
-        val normalizedVariant = Normalizer.normalize(variant.trim().uppercase(Locale.ROOT), Normalizer.Form.NFD)
+        val normalizedMaterial = normalize(material)
+        require(normalizedMaterial.isNotBlank()) { "Material is required for an approved tariff" }
+        val normalizedVariant = normalize(variant).ifBlank { "BASE" }
+        return "MEDIDA:$normalizedVariant:$normalizedMaterial:${format(length)}x${format(width)}"
+    }
+
+    private fun normalize(value: String): String =
+        Normalizer.normalize(value.trim().uppercase(Locale.ROOT), Normalizer.Form.NFD)
             .replace(Regex("\\p{Mn}+"), "")
             .replace(Regex("[^A-Z0-9_-]+"), "_")
             .trim('_')
-            .ifBlank { "BASE" }
-        return "MEDIDA:$normalizedVariant:${format(length)}x${format(width)}"
-    }
 
     private fun format(value: Double): String = BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
 }

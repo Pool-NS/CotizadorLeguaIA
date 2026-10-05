@@ -40,4 +40,10 @@ El precio heredado estaba fijado en `MainActivity` como largo × ancho × alto �
 
 ## Avance posterior
 
-La auditoría anterior registra el estado inicial; el flujo actual solicita largo y ancho sin mostrar altura. El catálogo actual usa `Carpas`, `Toldos` y `Tapizado de moto`. Las carpas guardan tipo abierta/cerrada y, para las cerradas, cantidad de ventanas y puertas. Las tarifas se registran por servicio, tamaño exacto y tipo de carpa. La migración Room 4→5 agrega los atributos opcionales y renombra el servicio anterior `Tapizado`; la verificación instrumentada de esta migración queda pendiente.
+La auditoría anterior registra el estado inicial; el flujo actual solicita largo y ancho sin mostrar altura. El catálogo actual usa `Carpas`, `Toldos` y `Tapizado de moto`. Las carpas guardan tipo abierta/cerrada y, para las cerradas, cantidad de ventanas y puertas. Las tarifas se registran por servicio, tamaño exacto, material y tipo de carpa; si falta la coincidencia aprobada, la cotización queda pendiente. Room v6 agrega la descripción del material a cotización. La verificación instrumentada de las migraciones queda pendiente.
+
+## Integración generativa y estado actual
+
+Se incorporó `BackendGenerativeAiClient` para que Android Debug llame a un servicio FastAPI local que consulta OpenAI mediante salida estructurada. La clave solo se configura en el servidor, fuera de Git y del APK. La persona revisa las sugerencias; el modelo no genera precios. Sin clave o servicio desplegado, la IA no realiza llamadas reales y la captura manual sigue disponible. Ver [docs/AI.md](AI.md).
+
+El 2026-10-05 se ejecutó `test lintDebug assembleDebug --offline`: BUILD SUCCESSFUL; 16 pruebas unitarias aprobadas, lint sin errores y APK Debug generado. El servidor FastAPI no se ejecutó porque sus dependencias no están instaladas en este entorno; no se probó llamada con una clave API. Las pruebas instrumentadas de Room quedan pendientes. SonarQube no se ejecutó porque no se configuraron servidor y token; no se afirma que el Quality Gate haya pasado.
