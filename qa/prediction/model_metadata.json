@@ -1,0 +1,20 @@
+{
+  "model": "LogisticRegression",
+  "version": "synthetic-logreg-1.0",
+  "features": [
+    "service_type",
+    "quote_amount",
+    "discount_percentage",
+    "requirement_complete",
+    "ai_interpretation_reviewed",
+    "quotation_time_minutes",
+    "days_to_requested_date"
+  ],
+  "seed": 742,
+  "split_counts": {
+    "train": 140,
+    "validation": 30,
+    "test": 30
+  },
+  "status": "TRAINED_ON_SYNTHETIC_DATA_ONLY"
+}

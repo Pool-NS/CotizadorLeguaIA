@@ -1,0 +1,3 @@
+# Predicción
+
+Existe una evaluación aislada reproducible con regresión logística y 200 registros completamente sintéticos. Se divide 140/30/30 con estratificación. La evaluación del script reporta validación y prueba por separado; variables posteriores como el tiempo de respuesta del cliente quedan fuera de las características. Las métricas en `qa/prediction/metrics.json` describen únicamente esta muestra de prueba sintética, no el negocio real. No está conectada a Android ni toma decisiones comerciales. Antes de uso real requiere consentimiento/gobernanza, resultados etiquetados válidos, calibración temporal y evaluación de sesgo.
