@@ -44,6 +44,6 @@ La auditoría anterior registra el estado inicial; el flujo actual solicita larg
 
 ## Integración generativa y estado actual
 
-Se incorporó `BackendGenerativeAiClient` para que Android Debug llame a un servicio FastAPI local que consulta OpenAI mediante salida estructurada. La clave solo se configura en el servidor, fuera de Git y del APK. La persona revisa las sugerencias; el modelo no genera precios. Sin clave o servicio desplegado, la IA no realiza llamadas reales y la captura manual sigue disponible. Ver [docs/AI.md](AI.md).
+Se incorporó `BackendGenerativeAiClient` para que Android Debug llame a un servicio FastAPI que consulta Gemini Developer API mediante salida estructurada. La clave solo se configura en el servidor, fuera de Git y del APK. La persona revisa las sugerencias; el modelo no genera precios. Sin clave o servicio accesible, la IA no realiza llamadas reales y la captura manual sigue disponible. Room es una base local por instalación; el backend actual no persiste cotizaciones ni sincroniza los dispositivos. Ver [docs/AI.md](AI.md).
 
 El 2026-10-05 se ejecutó `test lintDebug assembleDebug --offline`: BUILD SUCCESSFUL; 16 pruebas unitarias aprobadas, lint sin errores y APK Debug generado. El servidor FastAPI no se ejecutó porque sus dependencias no están instaladas en este entorno; no se probó llamada con una clave API. Las pruebas instrumentadas de Room quedan pendientes. SonarQube no se ejecutó porque no se configuraron servidor y token; no se afirma que el Quality Gate haya pasado.

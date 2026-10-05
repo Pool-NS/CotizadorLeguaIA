@@ -4,7 +4,7 @@ Aplicación Android en Kotlin/Compose con persistencia local Room. El repositori
 
 ## Estado actual
 
-La app incluye cotización local, tarifas, inventario, seguimiento, captura de voz y revisión humana de campos. El módulo de IA generativa requiere el backend local y una clave API configurada fuera del repositorio; no se entrega una clave ni backend público. Consulta [docs/AI.md](docs/AI.md), [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK Debug: `app/build/outputs/apk/debug/app-debug.apk`.
+La app incluye cotización local, tarifas, inventario, seguimiento, captura de voz y revisión humana de campos. El módulo de IA generativa usa un backend FastAPI que consulta Gemini y requiere una clave configurada fuera del repositorio; no se entrega una clave ni backend público. La gratuidad de Gemini depende de la cuenta, del modelo y de límites sujetos a cambio. Consulta [docs/AI.md](docs/AI.md), [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK Debug: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Requisitos y ejecución
 
@@ -14,7 +14,7 @@ En `Panel de Administración` el jefe puede guardar precios aprobados por servic
 
 ## Datos y modelo
 
-La base local es Room. Migraciones están en `app/src/main/.../data/AppDatabase.kt`. No desinstale la app para ocultar errores de migración. El esquema todavía no cubre todo el flujo comercial descrito; vea [docs/DATA_MODEL.md](docs/DATA_MODEL.md) y [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md).
+La base de datos actual es Room local en cada instalación Android. FastAPI recibe peticiones y llama a Gemini: no es la base de datos ni sincroniza varios trabajadores. Para compartir cotizaciones entre dispositivos hará falta alojar una base central y añadir autenticación/autorización al backend. Migraciones están en `app/src/main/.../data/AppDatabase.kt`. No desinstale la app para ocultar errores de migración. El esquema todavía no cubre todo el flujo comercial descrito; vea [docs/DATA_MODEL.md](docs/DATA_MODEL.md) y [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md).
 
 ## IA y predicción
 

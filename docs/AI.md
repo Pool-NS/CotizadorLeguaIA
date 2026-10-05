@@ -8,12 +8,12 @@ El modelo no calcula precios, descuentos, ventas, consumo de materiales ni reser
 
 ## Configuración
 
-La app nunca se conecta directamente a la API del proveedor ni incluye la clave. Sigue [backend/api/README.md](../backend/api/README.md), configura `OPENAI_API_KEY` en un archivo `.env` local que Git ignora y ejecuta el servidor local. `OPENAI_MODEL` se puede sobrescribir según los modelos habilitados en la cuenta API.
+La app nunca se conecta directamente a la API del proveedor ni incluye la clave. Sigue [backend/api/README.md](../backend/api/README.md), configura `GEMINI_API_KEY` en un archivo `.env` local que Git ignora y ejecuta el servidor. El modelo predeterminado es `gemini-3.5-flash-lite`; `GEMINI_MODEL` permite elegir otro modelo habilitado.
 
 Para teléfono físico, define `aiBackendUrl` en `local.properties` para una instancia de desarrollo accesible. La compilación Release solo acepta URL HTTPS mediante `aiBackendUrlRelease`. Un backend público aún requiere autenticación, límites de uso, protección de datos, monitoreo y políticas de retención; no está listo para producción multiusuario.
 
 ## Datos y evaluación
 
-No se debe enviar nombre, teléfono, dirección u otro dato identificable. La llamada a OpenAI usa salida estructurada con un esquema JSON y `store: false`. OpenAI indica que, por defecto, los datos de API no se usan para entrenar sus modelos; pueden aplicarse registros de supervisión y retención temporal. Revisa sus condiciones vigentes antes de usar solicitudes reales.
+No se debe enviar nombre, teléfono, dirección u otro dato identificable. Gemini usa salida estructurada con un esquema JSON. La cuota gratuita, cuando esté habilitada para la cuenta/modelo, tiene límites y puede agotarse; Google indica que los datos de nivel gratuito pueden usarse para mejorar sus productos. No uses este nivel con información real de clientes o confidencial sin revisar primero las condiciones vigentes. Ser estudiante no garantiza cuota API gratuita.
 
 El CSV sintético de 200 cotizaciones trata sobre conversión comercial y no entrena esta capacidad de interpretación generativa. La evaluación de la IA requiere un conjunto separado de frases de prueba con campos esperados validados por expertos: servicio, dimensiones, material, tipo de carpa/moto, faltantes y ambigüedades. No uses frases sintéticas como evidencia de desempeño en Leguía.

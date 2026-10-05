@@ -59,48 +59,44 @@ Captura material, tipo/modelo de moto, número de ventanas y puertas únicamente
 No calcules ni sugieras precios, descuentos, ventas ni consumo de stock. Señala datos ausentes y ambigüedades.
 La persona cotizadora siempre debe revisar y confirmar la propuesta."""
 
-app = FastAPI(title="Cotizador Leguía AI API", version="0.1.0")
+app = FastAPI(title="Cotizador Leguía Gemini API", version="0.2.0")
 
 
 def _extract_output_text(response_body: dict) -> str:
-    for item in response_body.get("output", []):
-        for content in item.get("content", []):
-            if content.get("type") == "output_text" and isinstance(content.get("text"), str):
-                return content["text"]
-    raise ValueError("The AI provider returned no structured text.")
+    candidates = response_body.get("candidates", [])
+    for candidate in candidates:
+        for part in candidate.get("content", {}).get("parts", []):
+            if isinstance(part.get("text"), str):
+                return part["text"]
+    raise ValueError("Gemini returned no structured text.")
 
 
 @app.get("/health")
 async def health() -> dict[str, bool]:
-    return {"ok": True, "ai_configured": bool(os.getenv("OPENAI_API_KEY"))}
+    return {"ok": True, "ai_configured": bool(os.getenv("GEMINI_API_KEY"))}
 
 
 @app.post("/v1/interpret", response_model=InterpretationResponse)
 async def interpret(request: InterpretationRequest) -> InterpretationResponse:
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
-        raise HTTPException(status_code=503, detail="AI provider is not configured.")
+        raise HTTPException(status_code=503, detail="Gemini API is not configured.")
 
-    model = os.getenv("OPENAI_MODEL", "gpt-5-mini").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
     payload = {
-        "model": model,
-        "store": False,
-        "instructions": SYSTEM_INSTRUCTIONS,
-        "input": request.requirement,
-        "text": {
-            "format": {
-                "type": "json_schema",
-                "name": "quote_requirement",
-                "strict": True,
-                "schema": RESPONSE_SCHEMA,
-            }
+        "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTIONS}]},
+        "contents": [{"role": "user", "parts": [{"text": request.requirement}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": RESPONSE_SCHEMA,
+            "temperature": 0,
         },
     }
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
             response = await client.post(
-                "https://api.openai.com/v1/responses",
-                headers={"Authorization": f"Bearer {api_key}"},
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                headers={"x-goog-api-key": api_key},
                 json=payload,
             )
         response.raise_for_status()
@@ -110,6 +106,10 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
         raise HTTPException(status_code=504, detail="AI provider timed out.") from exc
     except httpx.HTTPStatusError as exc:
         # Do not return provider response bodies; they may contain sensitive diagnostics.
+        if exc.response.status_code == 429:
+            raise HTTPException(status_code=429, detail="Gemini quota or rate limit reached.") from exc
+        if exc.response.status_code in {401, 403}:
+            raise HTTPException(status_code=503, detail="Gemini API key is invalid or not authorized.") from exc
         raise HTTPException(status_code=502, detail="AI provider request failed.") from exc
     except (httpx.RequestError, ValueError, json.JSONDecodeError, ValidationError) as exc:
         raise HTTPException(status_code=502, detail="AI provider returned an invalid interpretation.") from exc
