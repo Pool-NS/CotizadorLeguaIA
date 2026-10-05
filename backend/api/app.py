@@ -81,7 +81,7 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     if not api_key:
         raise HTTPException(status_code=503, detail="AI provider is not configured.")
 
-    model = os.getenv("OPENAI_MODEL", "gpt-6-luna").strip()
+    model = os.getenv("OPENAI_MODEL", "gpt-5-mini").strip()
     payload = {
         "model": model,
         "store": False,
