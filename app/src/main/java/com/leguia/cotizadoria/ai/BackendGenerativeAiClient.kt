@@ -26,7 +26,11 @@ class BackendGenerativeAiClient(private val baseUrl: String) : GenerativeAiClien
                     }
                     val status = connection.responseCode
                     if (status !in 200..299) {
-                        throw IOException("El servicio de interpretación no está disponible (HTTP $status).")
+                        val detail = connection.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                            ?.let { body -> runCatching { JSONObject(body).optString("detail") }.getOrNull() }
+                            ?.takeIf(String::isNotBlank)
+                        val message = detail?.let { ": $it" }.orEmpty()
+                        throw IOException("El servicio de interpretación no está disponible (HTTP $status)$message.")
                     }
                     val response = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
                     response.toInterpretation()

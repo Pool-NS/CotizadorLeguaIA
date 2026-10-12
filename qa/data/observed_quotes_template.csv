@@ -1,0 +1,1 @@
+record_id,phase,observation_date,service_type,ai_used,ai_interpretation_reviewed,start_time,final_price_time,quotation_time_minutes,quote_correct,error_count,error_codes,final_price_communicated_same_visit,exclusion_reason

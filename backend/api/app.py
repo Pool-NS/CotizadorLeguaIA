@@ -1,8 +1,9 @@
-"""Authenticated-by-configuration local API for structured quote interpretation."""
+"""Local API for structured quote interpretation with Gemini."""
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Literal
 
@@ -30,20 +31,19 @@ class InterpretationResponse(BaseModel):
 
 
 RESPONSE_SCHEMA = {
-    "type": "object",
-    "additionalProperties": False,
+    "type": "OBJECT",
     "properties": {
-        "service": {"type": ["string", "null"], "enum": ["Carpas", "Toldos", "Tapizado de moto"]},
-        "length_m": {"type": ["number", "null"]},
-        "width_m": {"type": ["number", "null"]},
-        "material": {"type": ["string", "null"]},
-        "motorcycle_type": {"type": ["string", "null"]},
-        "tent_type": {"type": ["string", "null"], "enum": ["ABIERTA", "CERRADA"]},
-        "windows": {"type": ["integer", "null"]},
-        "doors": {"type": ["integer", "null"]},
-        "missing_fields": {"type": "array", "items": {"type": "string"}},
-        "ambiguities": {"type": "array", "items": {"type": "string"}},
-        "review_required": {"type": "boolean"},
+        "service": {"type": "STRING", "nullable": True, "enum": ["Carpas", "Toldos", "Tapizado de moto"]},
+        "length_m": {"type": "NUMBER", "nullable": True},
+        "width_m": {"type": "NUMBER", "nullable": True},
+        "material": {"type": "STRING", "nullable": True},
+        "motorcycle_type": {"type": "STRING", "nullable": True},
+        "tent_type": {"type": "STRING", "nullable": True, "enum": ["ABIERTA", "CERRADA"]},
+        "windows": {"type": "INTEGER", "nullable": True},
+        "doors": {"type": "INTEGER", "nullable": True},
+        "missing_fields": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "ambiguities": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "review_required": {"type": "BOOLEAN"},
     },
     "required": [
         "service", "length_m", "width_m", "material", "motorcycle_type",
@@ -59,7 +59,8 @@ Captura material, tipo/modelo de moto, número de ventanas y puertas únicamente
 No calcules ni sugieras precios, descuentos, ventas ni consumo de stock. Señala datos ausentes y ambigüedades.
 La persona cotizadora siempre debe revisar y confirmar la propuesta."""
 
-app = FastAPI(title="Cotizador Leguía Gemini API", version="0.3.0")
+app = FastAPI(title="Cotizador Leguía Gemini API", version="0.4.0")
+logger = logging.getLogger(__name__)
 
 
 def _extract_output_text(response_body: dict) -> str:
@@ -82,7 +83,7 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     if not api_key:
         raise HTTPException(status_code=503, detail="Gemini API is not configured.")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
 
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTIONS}]},
@@ -95,25 +96,35 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     }
 
     try:
-        url = f"https://googleapis.com{model}%3AgenerateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
         async with httpx.AsyncClient(timeout=25.0) as client:
-            response = await client.post(url, json=payload)
+            response = await client.post(
+                url,
+                headers={"x-goog-api-key": api_key},
+                json=payload,
+            )
 
         response.raise_for_status()
         parsed = json.loads(_extract_output_text(response.json()))
         result = InterpretationResponse.model_validate(parsed)
 
     except httpx.HTTPStatusError as exc:
-        print(f"[ERROR HTTP DIRECTO]: {exc.response.status_code} - {exc.response.text}")
-        if exc.response.status_code in {401, 403}:
-            raise HTTPException(status_code=503, detail="Gemini API key is invalid or unauthorized.")
-        raise HTTPException(status_code=502, detail="AI provider request failed.")
-    except Exception as exc:
-        import traceback
-        print(f"[ERROR DETALLADO DE RED]: {str(exc)}")
-        traceback.print_exc()
-        raise HTTPException(status_code=502, detail="AI provider returned an invalid interpretation.")
+        status_code = exc.response.status_code
+        logger.warning("Gemini request failed with HTTP %s", status_code)
+        if status_code == 401:
+            raise HTTPException(status_code=503, detail="Gemini did not authenticate the configured API key.") from exc
+        if status_code == 403:
+            raise HTTPException(status_code=503, detail="The Gemini API key lacks permission for this project or API.") from exc
+        if status_code == 400:
+            raise HTTPException(status_code=400, detail="Gemini rejected the request format or generation settings.") from exc
+        if status_code == 404:
+            raise HTTPException(status_code=404, detail="The configured Gemini model was not found or is unavailable.") from exc
+        if status_code == 429:
+            raise HTTPException(status_code=429, detail="Gemini quota or rate limit reached.") from exc
+        raise HTTPException(status_code=502, detail="Gemini provider request failed.") from exc
+    except (httpx.RequestError, ValueError, json.JSONDecodeError, ValidationError) as exc:
+        raise HTTPException(status_code=502, detail="AI provider returned an invalid interpretation.") from exc
 
     if result.length_m is not None and result.length_m <= 0:
         result.length_m = None

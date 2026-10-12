@@ -77,7 +77,11 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(3.0, result.length_m)
         self.assertEqual(2.0, result.width_m)
         self.assertTrue(result.review_required)
+        self.assertIn("generativelanguage.googleapis.com/v1beta/models/", FakeAsyncClient.last_url)
+        self.assertTrue(FakeAsyncClient.last_url.endswith(":generateContent"))
         self.assertEqual("application/json", FakeAsyncClient.last_payload["generationConfig"]["responseMimeType"])
+        self.assertEqual("OBJECT", FakeAsyncClient.last_payload["generationConfig"]["responseSchema"]["type"])
+        self.assertTrue(FakeAsyncClient.last_payload["generationConfig"]["responseSchema"]["properties"]["service"]["nullable"])
         self.assertNotIn("price", FakeAsyncClient.last_payload)
         self.assertEqual("test-secret", FakeAsyncClient.last_headers["x-goog-api-key"])
         self.assertNotIn("key=", FakeAsyncClient.last_url)
@@ -88,7 +92,7 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
                 result = await app.interpret(app.InterpretationRequest(requirement="Carpa 3 por 2"))
 
         self.assertEqual("Carpas", result.service)
-        self.assertIn("/models/gemini-test:generateContent", FakeAsyncClient.last_url)
+        self.assertIn("/v1beta/models/gemini-test:generateContent", FakeAsyncClient.last_url)
 
     def test_extracts_text_from_gemini_api_shape(self) -> None:
         body = {"candidates": [{"content": {"parts": [{"text": "{}"}]}}]}
