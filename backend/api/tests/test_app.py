@@ -68,7 +68,7 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
                 await app.interpret(app.InterpretationRequest(requirement="Carpa 3 por 2"))
         self.assertEqual(503, raised.exception.status_code)
 
-    async def test_returns_structured_suggestion_and_never_enables_provider_storage(self) -> None:
+    async def test_returns_structured_suggestion_using_gemini_json(self) -> None:
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-secret"}, clear=True):
             with patch("app.httpx.AsyncClient", FakeAsyncClient):
                 result = await app.interpret(app.InterpretationRequest(requirement="Carpa cerrada 3 por 2"))

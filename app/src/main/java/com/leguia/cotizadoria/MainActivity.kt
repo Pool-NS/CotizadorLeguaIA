@@ -123,6 +123,7 @@ class MainActivity : ComponentActivity() {
                     when (pantallaActual) {
                         DestinoPantalla.INICIO -> {
                             PantallaInicio(
+                                versionNombre = BuildConfig.VERSION_NAME,
                                 operadorSeleccionado = operadorActual,
                                 esModoOffline = esModoOffline,
                                 onCambiarOperador = { nuevoOperador -> operadorActual = nuevoOperador },

@@ -6,6 +6,8 @@ Aplicación Android en Kotlin/Compose con persistencia local Room. El repositori
 
 La app incluye cotización local, tarifas, inventario, seguimiento, captura de voz y revisión humana de campos. El módulo de IA generativa usa un backend FastAPI que consulta Gemini y requiere una clave configurada fuera del repositorio; no se entrega una clave ni backend público. La gratuidad de Gemini depende de la cuenta, del modelo y de límites sujetos a cambio. Consulta [docs/AI.md](docs/AI.md), [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK Debug: `app/build/outputs/apk/debug/app-debug.apk`.
 
+La versión Android de este avance es `1.1.0` (version code `2`). La app muestra su identidad y versión en la pantalla de inicio y usa un ícono vectorial propio de Leguía.
+
 ## Requisitos y ejecución
 
 Android Studio compatible con AGP 8.7.2, JDK 17 y Android SDK 35. Abre el directorio raíz en Android Studio. El backend se ejecuta aparte; instrucciones en `backend/api/README.md`. La última ejecución de test/lint anterior al módulo IA se documenta en `qa/FINAL_QUALITY_REPORT.md`; falta volver a validar este cambio y probarlo en dispositivo. SonarQube está configurado, pero el análisis y Quality Gate requieren una instancia y credenciales.
@@ -15,6 +17,10 @@ En `Panel de Administración` el jefe puede guardar precios aprobados por servic
 ## Datos y modelo
 
 La base de datos actual es Room local en cada instalación Android. FastAPI recibe peticiones y llama a Gemini: no es la base de datos ni sincroniza varios trabajadores. Para compartir cotizaciones entre dispositivos hará falta alojar una base central y añadir autenticación/autorización al backend. Migraciones están en `app/src/main/.../data/AppDatabase.kt`. No desinstale la app para ocultar errores de migración. El esquema todavía no cubre todo el flujo comercial descrito; vea [docs/DATA_MODEL.md](docs/DATA_MODEL.md) y [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md).
+
+## Dataset de 200 registros
+
+El archivo `qa/data/synthetic_quotes_200.csv` se abre directamente en jamovi o SPSS; no se carga en Room. La guía de importación y análisis exploratorio está en [qa/data/README_JAMOVI.md](qa/data/README_JAMOVI.md). Sus 200 registros son sintéticos y sirven para practicar el análisis, no como datos históricos reales de Leguía.
 
 ## IA y predicción
 

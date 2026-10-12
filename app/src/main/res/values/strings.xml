@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">Cotizador Leguía IA</string>
+    <string name="app_name">Cotizador Leguía</string>
+    <string name="app_tagline">Cotizaciones, precios y materiales en un solo lugar</string>
+    <string name="app_version_label">Versión %1$s</string>
 </resources>

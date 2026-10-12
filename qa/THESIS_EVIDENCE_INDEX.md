@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|---|
 | Formulario de requerimiento | Captura y validación | Registrar solicitud | `CotizacionEntity`, Compose | TC-001…TC-060; unit UI pendiente | tiempo (inicio/fin parcial) | `PantallaFormularioServicio.kt` | Parcial
 | Cálculo configurable | Sin reglas inventadas | Calcular referencial | `QuotePricingCalculator` | `PricingWorkflowTest` escrito, no ejecutado | exactitud por validar con negocio | `domain/Pricing.kt` | Parcial
-| Revisión IA | IA sugiere, humano decide | Interpretar requerimiento | `GenerativeAiClient` interface/fake | TC-061…TC-090 no ejecutados | correcciones humanas pendientes | `ai/GenerativeAiClient.kt` | Interfaz únicamente
+| Revisión IA | IA sugiere, humano decide | Interpretar requerimiento | Android → FastAPI → Gemini; Room guarda evidencia local | 5 pruebas unitarias simuladas; prueba con API/dispositivo pendiente | correcciones humanas pendientes | `backend/api/app.py`, `BackendGenerativeAiClient.kt` | Integrada; servicio requiere clave y URL configuradas
 | Estado comercial | Mantener resultado trazable | Concretar/no concretar | `QuoteWorkflow`; Room pendiente | TC-091…TC-115 no ejecutados | tasa de conversión futura | `domain/QuoteWorkflow.kt` | Lógica aislada
 | Proforma/producción/materiales | Continuidad operativa | Venta a trabajo | Sin entidades nuevas persistidas | TC-116…TC-175 no ejecutados | no calculado | Diseño en `docs/DATA_MODEL.md` | Pendiente
 | Predictor | Estimar conversión en sintéticos | Evaluación offline | pipeline sklearn sintético | script ejecutado, no test Android | métricas de test sintético | `qa/prediction/metrics.json` | Técnico sintético
