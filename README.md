@@ -12,6 +12,8 @@ La versión Android de este avance es `1.1.0` (version code `2`). La app muestra
 
 Android Studio compatible con AGP 8.7.2, JDK 17 y Android SDK 35. Abre el directorio raíz en Android Studio. El backend se ejecuta aparte; instrucciones en `backend/api/README.md`. La última ejecución de test/lint anterior al módulo IA se documenta en `qa/FINAL_QUALITY_REPORT.md`; falta volver a validar este cambio y probarlo en dispositivo. SonarQube está configurado, pero el análisis y Quality Gate requieren una instancia y credenciales.
 
+Para desplegar el backend de demostración en Render consulta [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md). El plan Free puede suspenderse por inactividad y el backend aún no incluye autenticación ni límites de uso para un despliegue operativo multiusuario.
+
 En `Panel de Administración` el jefe puede guardar precios aprobados por servicio, tamaño exacto, material y tipo de carpa (abierta/cerrada), y registrar ingresos de materiales. Las carpas cerradas capturan ventanas y puertas; el tapizado se especifica como `Tapizado de moto` con tipo/modelo. La app no solicita altura y solo aplica coincidencias exactas de servicio, tamaño, material y variante; si falta un material o su tarifa, la solicitud queda pendiente para revisión.
 
 ## Datos y modelo

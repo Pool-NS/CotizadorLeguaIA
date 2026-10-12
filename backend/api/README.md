@@ -32,6 +32,8 @@ Referencias oficiales: [crear clave y configurar API](https://ai.google.dev/gemi
 
 Este backend está preparado para pruebas locales, no para despliegue multiusuario. Antes de usarlo con trabajadores se requiere hosting HTTPS, autenticación por usuario, límites de uso, rotación y protección de secretos, registro de auditoría sin contenido sensible y política de retención. No se debe guardar una clave del proveedor dentro del APK.
 
+La receta reproducible para Render, las variables de entorno, la URL Release de Android y las limitaciones del plan gratuito están en [`../../docs/DEPLOY_RENDER.md`](../../docs/DEPLOY_RENDER.md). El archivo `render.yaml` se encuentra en la raíz del repositorio y configura `backend/api` como `rootDir`.
+
 ## Verificación
 
 - `GET /health`: confirma que el proceso está activo y si detecta una clave Gemini configurada, sin revelar la clave. La respuesta debe mostrar `ok: true` y `ai_configured: true` para poder interpretar solicitudes.
