@@ -17,33 +17,33 @@ class InterpretationRequest(BaseModel):
 
 class InterpretationResponse(BaseModel):
     service: Literal["Carpas", "Toldos", "Tapizado de moto"] | None = None
-    length_m: float | None = Field(default=None, gt=0)
-    width_m: float | None = Field(default=None, gt=0)
-    material: str | None = Field(default=None, max_length=100)
-    motorcycle_type: str | None = Field(default=None, max_length=100)
+    length_m: float | None = None
+    width_m: float | None = None
+    material: str | None = None
+    motorcycle_type: str | None = None
     tent_type: Literal["ABIERTA", "CERRADA"] | None = None
-    windows: int | None = Field(default=None, ge=0)
-    doors: int | None = Field(default=None, ge=0)
+    windows: int | None = None
+    doors: int | None = None
     missing_fields: list[str] = Field(default_factory=list)
     ambiguities: list[str] = Field(default_factory=list)
-    review_required: Literal[True] = True
+    review_required: bool = True
 
 
 RESPONSE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "service": {"type": ["string", "null"], "enum": ["Carpas", "Toldos", "Tapizado de moto", None]},
+        "service": {"type": ["string", "null"], "enum": ["Carpas", "Toldos", "Tapizado de moto"]},
         "length_m": {"type": ["number", "null"]},
         "width_m": {"type": ["number", "null"]},
         "material": {"type": ["string", "null"]},
         "motorcycle_type": {"type": ["string", "null"]},
-        "tent_type": {"type": ["string", "null"], "enum": ["ABIERTA", "CERRADA", None]},
+        "tent_type": {"type": ["string", "null"], "enum": ["ABIERTA", "CERRADA"]},
         "windows": {"type": ["integer", "null"]},
         "doors": {"type": ["integer", "null"]},
         "missing_fields": {"type": "array", "items": {"type": "string"}},
         "ambiguities": {"type": "array", "items": {"type": "string"}},
-        "review_required": {"type": "boolean", "enum": [True]},
+        "review_required": {"type": "boolean"},
     },
     "required": [
         "service", "length_m", "width_m", "material", "motorcycle_type",
@@ -59,7 +59,7 @@ Captura material, tipo/modelo de moto, número de ventanas y puertas únicamente
 No calcules ni sugieras precios, descuentos, ventas ni consumo de stock. Señala datos ausentes y ambigüedades.
 La persona cotizadora siempre debe revisar y confirmar la propuesta."""
 
-app = FastAPI(title="Cotizador Leguía Gemini API", version="0.2.0")
+app = FastAPI(title="Cotizador Leguía Gemini API", version="0.3.0")
 
 
 def _extract_output_text(response_body: dict) -> str:
@@ -82,39 +82,39 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     if not api_key:
         raise HTTPException(status_code=503, detail="Gemini API is not configured.")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash").strip()
+
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTIONS}]},
         "contents": [{"role": "user", "parts": [{"text": request.requirement}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
             "responseSchema": RESPONSE_SCHEMA,
-            "temperature": 0,
+            "temperature": 0.0,
         },
     }
+
     try:
+        url = f"https://googleapis.com{model}%3AgenerateContent?key={api_key}"
+
         async with httpx.AsyncClient(timeout=25.0) as client:
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                headers={"x-goog-api-key": api_key},
-                json=payload,
-            )
+            response = await client.post(url, json=payload)
+
         response.raise_for_status()
         parsed = json.loads(_extract_output_text(response.json()))
         result = InterpretationResponse.model_validate(parsed)
-    except httpx.TimeoutException as exc:
-        raise HTTPException(status_code=504, detail="AI provider timed out.") from exc
-    except httpx.HTTPStatusError as exc:
-        # Do not return provider response bodies; they may contain sensitive diagnostics.
-        if exc.response.status_code == 429:
-            raise HTTPException(status_code=429, detail="Gemini quota or rate limit reached.") from exc
-        if exc.response.status_code in {401, 403}:
-            raise HTTPException(status_code=503, detail="Gemini API key is invalid or not authorized.") from exc
-        raise HTTPException(status_code=502, detail="AI provider request failed.") from exc
-    except (httpx.RequestError, ValueError, json.JSONDecodeError, ValidationError) as exc:
-        raise HTTPException(status_code=502, detail="AI provider returned an invalid interpretation.") from exc
 
-    # Discard semantically invalid dimensions rather than passing them into a quote.
+    except httpx.HTTPStatusError as exc:
+        print(f"[ERROR HTTP DIRECTO]: {exc.response.status_code} - {exc.response.text}")
+        if exc.response.status_code in {401, 403}:
+            raise HTTPException(status_code=503, detail="Gemini API key is invalid or unauthorized.")
+        raise HTTPException(status_code=502, detail="AI provider request failed.")
+    except Exception as exc:
+        import traceback
+        print(f"[ERROR DETALLADO DE RED]: {str(exc)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=502, detail="AI provider returned an invalid interpretation.")
+
     if result.length_m is not None and result.length_m <= 0:
         result.length_m = None
     if result.width_m is not None and result.width_m <= 0:
