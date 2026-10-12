@@ -4,7 +4,7 @@
 
 La tesis compartida plantea un estudio cuantitativo, aplicado y preexperimental de un grupo con medición antes y después de implementar la aplicación (pretest → intervención → posttest). La unidad de análisis es cada solicitud real de cotización atendida en Leguía. Las dimensiones principales de la variable dependiente son tiempo de cotización, exactitud y cumplimiento u oportunidad.
 
-Por ello, la fuente para contrastar las hipótesis debe ser el registro de solicitudes reales observadas en el negocio. El CSV `synthetic_quotes_200.csv` contiene 200 filas simuladas y se conserva para practicar la importación, descriptivos y el flujo de jamovi/SPSS. No es historial de Leguía, no entrena el componente de interpretación y no puede respaldar resultados empíricos ni valores p de la tesis.
+Por ello, la fuente para contrastar las hipótesis debe ser el registro de solicitudes reales observadas en el negocio. El CSV `synthetic_quotes_200.csv` contiene 200 filas simuladas y se conserva para practicar la importación, descriptivos y el flujo de jamovi/SPSS. `synthetic_quote_stock_pricing_200.csv` añade supuestos ficticios de consumo, precios y stock para demostrar el dashboard y los estados de factibilidad. Ninguno es historial de Leguía, ninguno entrena el componente de interpretación y ninguno puede respaldar resultados empíricos ni valores p de la tesis. Consulta [README_STOCK_DEMO.md](../qa/data/README_STOCK_DEMO.md) para ver las limitaciones de esos escenarios.
 
 ## Cómo levantar los registros
 

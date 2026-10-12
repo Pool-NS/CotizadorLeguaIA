@@ -22,7 +22,7 @@ La base de datos actual es Room local en cada instalación Android. FastAPI reci
 
 ## Dataset de 200 registros
 
-El archivo `qa/data/synthetic_quotes_200.csv` se abre directamente en jamovi o SPSS; no se carga en Room. Sus 200 registros son sintéticos y sirven para practicar, no como datos históricos reales ni evidencia empírica de Leguía. Para recolectar las observaciones reales de pretest/posttest, usa la plantilla vacía `qa/data/observed_quotes_template.csv` y sigue [docs/THESIS_DATA_GUIDE.md](docs/THESIS_DATA_GUIDE.md). La guía de importación y análisis exploratorio del CSV sintético está en [qa/data/README_JAMOVI.md](qa/data/README_JAMOVI.md).
+El archivo `qa/data/synthetic_quotes_200.csv` se abre directamente en jamovi o SPSS; no se carga en Room. Sus 200 registros son sintéticos y sirven para practicar, no como datos históricos reales ni evidencia empírica de Leguía. El demo con tarifas y stock simulados está en [qa/data/README_STOCK_DEMO.md](qa/data/README_STOCK_DEMO.md) y se abre desde Panel de Administración. Para recolectar observaciones reales pretest/posttest, usa la plantilla `qa/data/observed_quotes_template.csv` y sigue [docs/THESIS_DATA_GUIDE.md](docs/THESIS_DATA_GUIDE.md).
 
 ## IA y predicción
 

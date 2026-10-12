@@ -1,0 +1,4 @@
+service_type,material_name,rate_per_m2,closed_tent_multiplier,discount_source,simulation_flag
+Carpas,Lona PVC DEMO,95.00,1.35,synthetic_quotes_200.csv,true
+Toldos,Tarflex DEMO,112.00,1.00,synthetic_quotes_200.csv,true
+Tapizado de moto,Oxford DEMO,155.00,1.00,synthetic_quotes_200.csv,true

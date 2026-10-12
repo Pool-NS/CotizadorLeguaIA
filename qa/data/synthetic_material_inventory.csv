@@ -1,0 +1,4 @@
+material_name,stock_quantity,unit,synthetic_unit_cost,simulation_flag
+Lona PVC DEMO,32.00,m² simulado,18.00,true
+Tarflex DEMO,24.00,m² simulado,23.00,true
+Oxford DEMO,9.00,m² equivalente DEMO,38.00,true

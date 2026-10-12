@@ -22,12 +22,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.leguia.cotizadoria.data.CotizacionEntity
+import com.leguia.cotizadoria.data.StockMaterialRow
+import com.leguia.cotizadoria.domain.MaterialReadinessEvaluator
+import com.leguia.cotizadoria.domain.MaterialReadinessStatus
 import java.util.Locale
 
 @Composable
 fun PantallaResumenPrecio(
     cotizacion: CotizacionEntity?,
     servicioNombre: String,
+    stock: List<StockMaterialRow>,
     onFinalizarCotizacion: (CotizacionEntity) -> Unit,
     onVolver: () -> Unit
 ) {
@@ -85,12 +89,7 @@ fun PantallaResumenPrecio(
                 }
             }
 
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Materiales y stock", style = MaterialTheme.typography.titleMedium)
-                    Text("El inventario se consulta en Administración → Materiales y stock. Esta cotización aún no descuenta materiales porque falta definir el consumo por servicio y tamaño.", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+            MaterialReadinessCard(cotizacion, servicioNombre, stock)
 
             Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
                 Text(
@@ -108,6 +107,45 @@ fun PantallaResumenPrecio(
 }
 
 @Composable
+private fun MaterialReadinessCard(cotizacion: CotizacionEntity, serviceName: String, inventory: List<StockMaterialRow>) {
+    val readiness = MaterialReadinessEvaluator.assess(
+        serviceName = serviceName,
+        materialName = cotizacion.materialDescripcion,
+        lengthM = cotizacion.medidaLargo,
+        widthM = cotizacion.medidaAncho,
+        tentType = cotizacion.tipoCarpa,
+        inventory = inventory
+    )
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Factibilidad de material", style = MaterialTheme.typography.titleMedium)
+            when (readiness.status) {
+                MaterialReadinessStatus.MATERIAL_MISSING -> Text("Falta indicar el material para revisar inventario.")
+                MaterialReadinessStatus.STOCK_NOT_REGISTERED -> Text("${readiness.material} no aparece en el inventario. Requiere revisión del responsable.")
+                MaterialReadinessStatus.CONSUMPTION_RULE_REQUIRED -> {
+                    Text("Stock registrado: ${readiness.available?.let(::decimal) ?: "—"} ${readiness.unit.orEmpty()}.")
+                    Text("Falta validar cuánto material consume este servicio y tamaño; no se puede afirmar si alcanza.")
+                }
+                MaterialReadinessStatus.REQUIREMENT_INCOMPLETE -> Text("Completa largo y ancho para evaluar el escenario sintético.")
+                MaterialReadinessStatus.SHORTAGE -> {
+                    Text("Faltante estimado: ${decimal(readiness.shortage ?: 0.0)} ${readiness.unit.orEmpty()}", color = MaterialTheme.colorScheme.error)
+                    Text("Necesario: ${decimal(readiness.required ?: 0.0)} · disponible: ${decimal(readiness.available ?: 0.0)}")
+                }
+                MaterialReadinessStatus.SUFFICIENT_SYNTHETIC_SCENARIO -> {
+                    Text("Material suficiente en el escenario DEMO: ${decimal(readiness.available ?: 0.0)} ${readiness.unit.orEmpty()} disponibles.", color = MaterialTheme.colorScheme.primary)
+                    Text("Consumo estimado de demostración: ${decimal(readiness.required ?: 0.0)} ${readiness.unit.orEmpty()}.")
+                }
+            }
+            if (readiness.synthetic) {
+                Text("Valores ficticios de demostración. No usar para aceptar pedidos, comprar ni descontar stock.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            } else {
+                Text("La IA interpreta la solicitud; la disponibilidad depende de stock y consumos validados por el negocio. Esta revisión no reserva existencias.", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
 private fun InfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -117,3 +155,4 @@ private fun InfoRow(label: String, value: String) {
 
 private fun money(value: Double): String = String.format(Locale("es", "PE"), "S/ %.2f", value)
 private fun formatDimension(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
+private fun decimal(value: Double): String = String.format(Locale("es", "PE"), "%.2f", value)

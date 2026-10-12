@@ -28,7 +28,9 @@ import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.StockMaterialRow
 import com.leguia.cotizadoria.data.ServicioEntity
 import com.leguia.cotizadoria.data.ParametroPrecioEntity
+import com.leguia.cotizadoria.data.SyntheticDemoDashboard
 import com.leguia.cotizadoria.domain.QuoteStatus
+import java.util.Locale
 
 @Composable
 fun PantallaPanelAdmin(
@@ -39,16 +41,22 @@ fun PantallaPanelAdmin(
     onGuardarTarifa: (Int, Double, Double, String, String, Double) -> Unit,
     onRegistrarIngreso: (String, String, Double, String, (String?) -> Unit) -> Unit,
     onRegistrarResultado: (CotizacionEntity, QuoteStatus) -> Unit,
+    demoData: SyntheticDemoDashboard,
     onVolver: () -> Unit
 ) {
     var mostrarInventario by remember { mutableStateOf(false) }
     var mostrarTarifas by remember { mutableStateOf(false) }
+    var mostrarDemo by remember { mutableStateOf(false) }
     if (mostrarTarifas) {
         PantallaTarifas(servicios, tarifas, onGuardarTarifa, onVolver = { mostrarTarifas = false })
         return
     }
     if (mostrarInventario) {
         PantallaInventario(stock = listaStock, onRegistrarIngreso = onRegistrarIngreso, onVolver = { mostrarInventario = false })
+        return
+    }
+    if (mostrarDemo) {
+        PantallaDemoDashboard(data = demoData, onVolver = { mostrarDemo = false })
         return
     }
     Column(
@@ -80,11 +88,21 @@ fun PantallaPanelAdmin(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(onClick = { mostrarDemo = true }, modifier = Modifier.fillMaxWidth()) {
+            Text("Dashboard demo · 200 datos sintéticos")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Resumen comercial",
+            text = "Indicadores de cotizaciones guardadas en este teléfono",
             style = MaterialTheme.typography.titleLarge
         )
+        val resolvedQuotes = listaCotizaciones.count {
+            it.estado == QuoteStatus.CONCRETADA.name || it.estado == QuoteStatus.NO_CONCRETADA.name
+        }
+        val conversionPercent = if (resolvedQuotes == 0) 0.0 else
+            listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name } * 100.0 / resolvedQuotes
+        val quotedValue = listaCotizaciones.filter { it.estado != "PENDIENTE_PRECIO" }.sumOf { it.precioFinal }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
             MetricCard("Solicitudes", listaCotizaciones.size.toString(), Modifier.weight(1f))
             MetricCard("Pendientes", listaCotizaciones.count { it.estado == QuoteStatus.PENDIENTE.name || it.estado == "PENDIENTE_PRECIO" }.toString(), Modifier.weight(1f))
@@ -95,6 +113,11 @@ fun PantallaPanelAdmin(
             MetricCard("Concretadas", listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name }.toString(), Modifier.weight(1f))
             MetricCard("No concretadas", listaCotizaciones.count { it.estado == QuoteStatus.NO_CONCRETADA.name }.toString(), Modifier.weight(1f))
         }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            MetricCard("Valor cotizado", String.format(Locale("es", "PE"), "S/ %.2f", quotedValue), Modifier.weight(1f))
+            MetricCard("Conversión cerrada", String.format(Locale("es", "PE"), "%.1f%%", conversionPercent), Modifier.weight(1f))
+        }
+        Text("La conversión usa cotizaciones concretadas / (concretadas + no concretadas). Los datos de este panel son locales a este teléfono.", style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(8.dp))
         Text("Historial de cotizaciones", style = MaterialTheme.typography.titleMedium)
 

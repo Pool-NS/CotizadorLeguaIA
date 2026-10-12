@@ -26,6 +26,7 @@ import com.leguia.cotizadoria.data.AppDatabase
 import com.leguia.cotizadoria.ai.BackendGenerativeAiClient
 import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.CotizadorRepository
+import com.leguia.cotizadoria.data.SyntheticDemoDataLoader
 import com.leguia.cotizadoria.domain.SpokenRequirementParser
 import com.leguia.cotizadoria.domain.ConfiguredPrice
 import com.leguia.cotizadoria.domain.PriceLine
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
             prediccionDao = db.prediccionDao()
         )
         val viewModel = CotizadorViewModel(repository, BackendGenerativeAiClient(BuildConfig.AI_BACKEND_URL))
+        val syntheticDemoData = SyntheticDemoDataLoader.load(applicationContext)
 
         setContent {
             var pantallaActual by remember { mutableStateOf(DestinoPantalla.INICIO) }
@@ -157,6 +159,7 @@ class MainActivity : ComponentActivity() {
                                 onRegistrarResultado = { cotizacion, resultado ->
                                     viewModel.registrarResultadoComercial(cotizacion, operadorActual, resultado)
                                 },
+                                demoData = syntheticDemoData,
                                 onVolver = { pantallaActual = DestinoPantalla.INICIO }
                             )
                         }
@@ -261,6 +264,7 @@ class MainActivity : ComponentActivity() {
                             PantallaResumenPrecio(
                                 cotizacion = cotizacionValida,
                                 servicioNombre = listaServicios.firstOrNull { it.id == cotizacionValida.servicioId }?.nombre.orEmpty(),
+                                stock = listaStock,
                                 onFinalizarCotizacion = {
                                     viewModel.registrarCotizacion(cotizacionValida) {
                                         pantallaActual = DestinoPantalla.INICIO
