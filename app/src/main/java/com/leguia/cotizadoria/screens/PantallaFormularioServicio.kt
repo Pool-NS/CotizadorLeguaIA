@@ -13,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -57,11 +59,19 @@ fun PantallaFormularioServicio(
     var carpaCerrada by remember(servicioId) { mutableStateOf(false) }
     var cantidadVentanas by remember(servicioId) { mutableStateOf("") }
     var cantidadPuertas by remember(servicioId) { mutableStateOf("") }
+    var medidaAlto by remember(servicioId) { mutableStateOf("") }
+    var materialMenuExpanded by remember { mutableStateOf(false) }
+    var sizeMenuExpanded by remember { mutableStateOf(false) }
     var errorFormulario by remember { mutableStateOf<String?>(null) }
     var iaAplicada by remember { mutableStateOf(false) }
     var corregidaPorPersona by remember { mutableStateOf(false) }
     val isCarpas = servicioNombre.equals("Carpas", ignoreCase = true)
     val isMoto = servicioNombre.equals("Tapizado de moto", ignoreCase = true)
+    val opcionesMaterial = when {
+        isCarpas -> listOf("Lino económico", "Lino liviano", "Lino pesado")
+        servicioNombre.equals("Toldos", ignoreCase = true) -> listOf("Tarflex", "Lona orillo azul", "Lona orillo rojo")
+        else -> emptyList()
+    }
 
     LaunchedEffect(transcripcionInicial) {
         transcripcionInicial?.takeIf(String::isNotBlank)?.let(onInterpretarRequerimiento)
@@ -70,6 +80,7 @@ fun PantallaFormularioServicio(
         interpretacionIA?.let { interpretation ->
             interpretation.dimensions["largo"]?.let { medidaLargo = it.toString() }
             interpretation.dimensions["ancho"]?.let { medidaAncho = it.toString() }
+            interpretation.dimensions["alto"]?.let { medidaAlto = it.toString() }
             interpretation.characteristics["material"]?.let { material = it }
             interpretation.characteristics["tipoMoto"]?.let { tipoMoto = it }
             interpretation.characteristics["tipoCarpa"]?.let { tent ->
@@ -137,29 +148,76 @@ fun PantallaFormularioServicio(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        Text("Medidas en metros", style = MaterialTheme.typography.titleMedium)
+        androidx.compose.material3.OutlinedButton(onClick = { sizeMenuExpanded = true }) {
+            Text("Elegir medida frecuente")
+        }
+        DropdownMenu(expanded = sizeMenuExpanded, onDismissRequest = { sizeMenuExpanded = false }) {
+            listOf(2 to 2, 3 to 2, 3 to 3, 4 to 3, 5 to 4, 6 to 4).forEach { (length, width) ->
+                DropdownMenuItem(text = { Text("${length} × ${width} m") }, onClick = {
+                    medidaLargo = length.toString()
+                    medidaAncho = width.toString()
+                    sizeMenuExpanded = false
+                    if (iaAplicada) corregidaPorPersona = true
+                })
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = medidaLargo,
+                onValueChange = { medidaLargo = it; if (iaAplicada) corregidaPorPersona = true },
+                label = { Text("Largo (m)") },
+                modifier = Modifier.weight(1f), singleLine = true
+            )
+            OutlinedTextField(
+                value = medidaAncho,
+                onValueChange = { medidaAncho = it; if (iaAplicada) corregidaPorPersona = true },
+                label = { Text("Ancho (m)") },
+                modifier = Modifier.weight(1f), singleLine = true
+            )
+        }
         OutlinedTextField(
-            value = medidaLargo,
-            onValueChange = { medidaLargo = it; if (iaAplicada) corregidaPorPersona = true },
-            label = { Text("Largo (unidad por validar)") },
-            modifier = Modifier.fillMaxWidth()
+            value = medidaAlto,
+            onValueChange = { medidaAlto = it; if (iaAplicada) corregidaPorPersona = true },
+            label = { Text("Altura (m, opcional)") },
+            modifier = Modifier.fillMaxWidth(), singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = medidaAncho,
-            onValueChange = { medidaAncho = it; if (iaAplicada) corregidaPorPersona = true },
-            label = { Text("Ancho (unidad por validar)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = material,
-            onValueChange = { material = it; if (iaAplicada) corregidaPorPersona = true },
-            label = { Text("Material mencionado (revisar)") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        if (opcionesMaterial.isNotEmpty()) {
+            Text("Material", style = MaterialTheme.typography.titleMedium)
+            androidx.compose.material3.OutlinedButton(onClick = { materialMenuExpanded = true }) {
+                Text(material.ifBlank { "Seleccionar material" })
+            }
+            DropdownMenu(expanded = materialMenuExpanded, onDismissRequest = { materialMenuExpanded = false }) {
+                opcionesMaterial.forEach { option ->
+                    DropdownMenuItem(text = { Text(option) }, onClick = {
+                        material = option
+                        materialMenuExpanded = false
+                        if (iaAplicada) corregidaPorPersona = true
+                    })
+                }
+                DropdownMenuItem(text = { Text("Otro (escribir)") }, onClick = {
+                    material = ""
+                    materialMenuExpanded = false
+                })
+            }
+            if (material.isBlank()) {
+                OutlinedTextField(
+                    value = material,
+                    onValueChange = { material = it; if (iaAplicada) corregidaPorPersona = true },
+                    label = { Text("Especificar otro material") },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+            }
+            Text("Confirma con el jefe la tarifa, el consumo y el stock de cada variante.", style = MaterialTheme.typography.bodySmall)
+        } else {
+            OutlinedTextField(
+                value = material,
+                onValueChange = { material = it; if (iaAplicada) corregidaPorPersona = true },
+                label = { Text("Material mencionado (revisar)") },
+                modifier = Modifier.fillMaxWidth(), singleLine = true
+            )
+        }
 
         if (isCarpas) {
             Card(Modifier.fillMaxWidth()) {
@@ -204,6 +262,7 @@ fun PantallaFormularioServicio(
             onClick = {
                 val largo = medidaLargo.replace(',', '.').toDoubleOrNull()
                 val ancho = medidaAncho.replace(',', '.').toDoubleOrNull()
+                val alto = medidaAlto.replace(',', '.').toDoubleOrNull()
                 if (requerimiento.isBlank()) {
                     errorFormulario = "Describa el requerimiento del cliente."
                     return@Button
@@ -221,6 +280,10 @@ fun PantallaFormularioServicio(
                 val dimensiones = listOf(medidaLargo to largo, medidaAncho to ancho)
                 if (dimensiones.any { (raw, parsed) -> raw.isNotBlank() && (parsed == null || !parsed.isFinite() || parsed <= 0.0) }) {
                     errorFormulario = "Cada medida ingresada debe ser positiva y usar un decimal válido."
+                    return@Button
+                }
+                if (medidaAlto.isNotBlank() && (alto == null || !alto.isFinite() || alto <= 0.0)) {
+                    errorFormulario = "La altura opcional debe ser un número mayor que cero."
                     return@Button
                 }
                 val ventanas = if (isCarpas && carpaCerrada) cantidadVentanas.toIntOrNull() else null
@@ -254,7 +317,7 @@ fun PantallaFormularioServicio(
                     corregidoPorHumano = corregidaPorPersona,
                     medidaLargo = largo,
                     medidaAncho = ancho,
-                    medidaAlto = null,
+                    medidaAlto = alto,
                     precioReferencial = 0.0,
                     descuentoMonto = 0.0,
                     descuentoPorcentaje = 0.0,

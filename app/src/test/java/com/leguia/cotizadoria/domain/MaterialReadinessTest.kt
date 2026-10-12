@@ -25,11 +25,11 @@ class MaterialReadinessTest {
     fun demoScenarioCalculatesShortageWithoutChangingStock() {
         val result = MaterialReadinessEvaluator.assess(
             serviceName = "Carpas",
-            materialName = "Lona PVC DEMO",
+            materialName = "Lino pesado DEMO",
             lengthM = 4.0,
             widthM = 3.0,
             tentType = "CERRADA",
-            inventory = listOf(StockMaterialRow("Lona PVC DEMO", 10.0, "m² simulado"))
+            inventory = listOf(StockMaterialRow("Lino pesado DEMO", 10.0, "m² simulado"))
         )
 
         assertEquals(MaterialReadinessStatus.SHORTAGE, result.status)

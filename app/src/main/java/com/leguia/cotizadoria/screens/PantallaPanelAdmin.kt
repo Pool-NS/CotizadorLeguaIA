@@ -1,13 +1,16 @@
 package com.leguia.cotizadoria.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -59,76 +62,89 @@ fun PantallaPanelAdmin(
         PantallaDemoDashboard(data = demoData, onVolver = { mostrarDemo = false })
         return
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    val resolvedQuotes = listaCotizaciones.count {
+        it.estado == QuoteStatus.CONCRETADA.name || it.estado == QuoteStatus.NO_CONCRETADA.name
+    }
+    val conversionPercent = if (resolvedQuotes == 0) 0.0 else
+        listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name } * 100.0 / resolvedQuotes
+    val pendingCount = listaCotizaciones.count { it.estado == QuoteStatus.PENDIENTE.name || it.estado == "PENDIENTE_PRECIO" }
+    val completedCount = listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name }
+    val notCompletedCount = listaCotizaciones.count { it.estado == QuoteStatus.NO_CONCRETADA.name }
+    val quotedValue = listaCotizaciones.filter { it.estado != "PENDIENTE_PRECIO" }.sumOf { it.precioFinal }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Panel del Jefe",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            OutlinedButton(onClick = onVolver) {
-                Text("Volver")
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+                Text("Panel del Jefe", style = MaterialTheme.typography.headlineSmall)
+                OutlinedButton(onClick = onVolver) { Text("Volver") }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { mostrarInventario = true }, modifier = Modifier.weight(1f)) {
-                Text("Materiales y stock")
-            }
-            OutlinedButton(onClick = { mostrarTarifas = true }, modifier = Modifier.weight(1f)) {
-                Text("Tarifas")
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { mostrarInventario = true }, modifier = Modifier.weight(1f)) { Text("Materiales y stock") }
+                OutlinedButton(onClick = { mostrarTarifas = true }, modifier = Modifier.weight(1f)) { Text("Tarifas") }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(onClick = { mostrarDemo = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Dashboard demo · 200 datos sintéticos")
+        item {
+            OutlinedButton(onClick = { mostrarDemo = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Dashboard demo · 200 datos sintéticos")
+            }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        item { Text("Indicadores de cotizaciones guardadas en este teléfono", style = MaterialTheme.typography.titleLarge) }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                MetricCard("Solicitudes", listaCotizaciones.size.toString(), Modifier.weight(1f))
+                MetricCard("Pendientes", pendingCount.toString(), Modifier.weight(1f))
+                MetricCard("Stock", listaStock.size.toString(), Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                MetricCard("Concretadas", completedCount.toString(), Modifier.weight(1f))
+                MetricCard("No concretadas", notCompletedCount.toString(), Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                MetricCard("Valor cotizado", String.format(Locale("es", "PE"), "S/ %.2f", quotedValue), Modifier.weight(1f))
+                MetricCard("Conversión cerrada", String.format(Locale("es", "PE"), "%.1f%%", conversionPercent), Modifier.weight(1f))
+            }
+        }
+        item { Text("Cotizaciones por estado · datos locales", style = MaterialTheme.typography.titleMedium) }
+        item {
+            HorizontalMetricBars(listOf(
+                "Pendientes" to pendingCount.toDouble(),
+                "Concretadas" to completedCount.toDouble(),
+                "No concretadas" to notCompletedCount.toDouble()
+            ))
+        }
+        item { Text("Conversión de cotizaciones cerradas", style = MaterialTheme.typography.titleSmall) }
+        item { HorizontalMetricBars(listOf("Conversión (%)" to conversionPercent), scaleMaximum = 100.0) }
+        item {
+            Text("La conversión usa cotizaciones concretadas / (concretadas + no concretadas). Los datos de este panel son locales a este teléfono.", style = MaterialTheme.typography.bodySmall)
+        }
+        item { Text("Historial de cotizaciones", style = MaterialTheme.typography.titleMedium) }
+        items(listaCotizaciones) { cotizacion ->
+            TarjetaCotizacionItem(cotizacion = cotizacion, onRegistrarResultado = onRegistrarResultado)
+        }
+    }
+}
 
-        Text(
-            text = "Indicadores de cotizaciones guardadas en este teléfono",
-            style = MaterialTheme.typography.titleLarge
-        )
-        val resolvedQuotes = listaCotizaciones.count {
-            it.estado == QuoteStatus.CONCRETADA.name || it.estado == QuoteStatus.NO_CONCRETADA.name
-        }
-        val conversionPercent = if (resolvedQuotes == 0) 0.0 else
-            listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name } * 100.0 / resolvedQuotes
-        val quotedValue = listaCotizaciones.filter { it.estado != "PENDIENTE_PRECIO" }.sumOf { it.precioFinal }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-            MetricCard("Solicitudes", listaCotizaciones.size.toString(), Modifier.weight(1f))
-            MetricCard("Pendientes", listaCotizaciones.count { it.estado == QuoteStatus.PENDIENTE.name || it.estado == "PENDIENTE_PRECIO" }.toString(), Modifier.weight(1f))
-            MetricCard("Stock", listaStock.size.toString(), Modifier.weight(1f))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-            MetricCard("Concretadas", listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name }.toString(), Modifier.weight(1f))
-            MetricCard("No concretadas", listaCotizaciones.count { it.estado == QuoteStatus.NO_CONCRETADA.name }.toString(), Modifier.weight(1f))
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-            MetricCard("Valor cotizado", String.format(Locale("es", "PE"), "S/ %.2f", quotedValue), Modifier.weight(1f))
-            MetricCard("Conversión cerrada", String.format(Locale("es", "PE"), "%.1f%%", conversionPercent), Modifier.weight(1f))
-        }
-        Text("La conversión usa cotizaciones concretadas / (concretadas + no concretadas). Los datos de este panel son locales a este teléfono.", style = MaterialTheme.typography.bodySmall)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Historial de cotizaciones", style = MaterialTheme.typography.titleMedium)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
-            items(listaCotizaciones) { cotizacion ->
-                TarjetaCotizacionItem(cotizacion = cotizacion, onRegistrarResultado = onRegistrarResultado)
-                Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun HorizontalMetricBars(values: List<Pair<String, Double>>, scaleMaximum: Double? = null) {
+    val maximum = (scaleMaximum ?: values.maxOfOrNull { it.second }?.coerceAtLeast(1.0) ?: 1.0).coerceAtLeast(1.0)
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            values.forEach { (label, value) ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+                    Text(label, style = MaterialTheme.typography.bodySmall)
+                    Text(if (label == "Conversión (%)") String.format(Locale("es", "PE"), "%.1f%%", value) else value.toInt().toString(), style = MaterialTheme.typography.labelLarge)
+                }
+                Box(Modifier.fillMaxWidth().height(12.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                    Box(Modifier.fillMaxWidth((value / maximum).coerceIn(0.0, 1.0).toFloat()).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
+                }
             }
         }
     }

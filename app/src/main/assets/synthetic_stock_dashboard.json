@@ -4,74 +4,133 @@
   "seed": 20261012,
   "quote_count": 200,
   "mean_quote_minutes": 36.39,
-  "mean_simulated_final_price": 1382.57,
-  "sum_simulated_final_prices": 276513.63,
-  "mean_simulated_direct_material_cost": 286.34,
-  "mean_simulated_contribution_before_labor_overhead": 1096.23,
+  "mean_simulated_final_price": 1515.33,
+  "sum_simulated_final_prices": 303066.94,
+  "mean_simulated_direct_material_cost": 341.32,
+  "mean_simulated_contribution_before_labor_overhead": 1174.01,
   "non_positive_direct_contribution_count": 0,
   "conversion_rate_pct": 54.5,
   "feasibility_counts": {
-    "FACTIBLE_CON_REGLAS_SINTETICAS": 127,
-    "FALTA_STOCK": 21,
+    "FACTIBLE_CON_REGLAS_SINTETICAS": 105,
+    "FALTA_STOCK": 43,
     "REVISAR_DATOS": 52
   },
   "service_summary": {
     "Carpas": {
       "quotes": 67,
-      "simulated_final_total": 88727.3343,
-      "material_shortages": 5
+      "simulated_final_total": 100492.74194500002,
+      "material_shortages": 14
     },
     "Toldos": {
       "quotes": 67,
-      "simulated_final_total": 79916.68159999997,
-      "material_shortages": 7
+      "simulated_final_total": 104331.86180000001,
+      "material_shortages": 24
     },
     "Tapizado": {
       "quotes": 66,
-      "simulated_final_total": 107869.615,
-      "material_shortages": 18
+      "simulated_final_total": 98242.3325,
+      "material_shortages": 16
     }
   },
   "inventory": [
     {
-      "name": "Lona PVC DEMO",
+      "name": "Lino económico DEMO",
       "unit": "m² simulado",
       "stock": 32.0,
       "cost": 18.0,
-      "rate": 95.0
+      "rate": 95.0,
+      "weight": "ECONOMICO"
+    },
+    {
+      "name": "Lino liviano DEMO",
+      "unit": "m² simulado",
+      "stock": 28.0,
+      "cost": 22.0,
+      "rate": 108.0,
+      "weight": "LIVIANO"
+    },
+    {
+      "name": "Lino pesado DEMO",
+      "unit": "m² simulado",
+      "stock": 20.0,
+      "cost": 29.0,
+      "rate": 125.0,
+      "weight": "PESADO"
     },
     {
       "name": "Tarflex DEMO",
       "unit": "m² simulado",
       "stock": 24.0,
       "cost": 23.0,
-      "rate": 112.0
+      "rate": 112.0,
+      "weight": "ESTANDAR"
+    },
+    {
+      "name": "Lona orillo azul DEMO",
+      "unit": "m² simulado",
+      "stock": 22.0,
+      "cost": 25.0,
+      "rate": 120.0,
+      "weight": "ESTANDAR"
+    },
+    {
+      "name": "Lona orillo rojo DEMO",
+      "unit": "m² simulado",
+      "stock": 18.0,
+      "cost": 26.0,
+      "rate": 122.0,
+      "weight": "ESTANDAR"
     },
     {
       "name": "Oxford DEMO",
       "unit": "m² equivalente DEMO",
       "stock": 9.0,
       "cost": 38.0,
-      "rate": 155.0
+      "rate": 155.0,
+      "weight": "NO_APLICA"
     }
   ],
   "price_rules": [
     {
-      "service": "Carpas",
+      "service": "Carpas · Lino económico DEMO",
       "rate": 95.0,
-      "rule": "área × tarifa × 1.35 si cerrada",
-      "unit": "S/ por m² DEMO"
+      "rule": "tarifa sintética por m²; carpa cerrada × 1.35 (supuesto no validado)",
+      "unit": "S/ por m² simulado"
     },
     {
-      "service": "Toldos",
+      "service": "Carpas · Lino liviano DEMO",
+      "rate": 108.0,
+      "rule": "tarifa sintética por m²; carpa cerrada × 1.35 (supuesto no validado)",
+      "unit": "S/ por m² simulado"
+    },
+    {
+      "service": "Carpas · Lino pesado DEMO",
+      "rate": 125.0,
+      "rule": "tarifa sintética por m²; carpa cerrada × 1.35 (supuesto no validado)",
+      "unit": "S/ por m² simulado"
+    },
+    {
+      "service": "Toldos · Tarflex DEMO",
       "rate": 112.0,
-      "rule": "área × tarifa",
-      "unit": "S/ por m² DEMO"
+      "rule": "tarifa sintética por m² (supuesto no validado)",
+      "unit": "S/ por m² simulado"
     },
     {
-      "service": "Tapizado de moto",
+      "service": "Toldos · Lona orillo azul DEMO",
+      "rate": 120.0,
+      "rule": "tarifa sintética por m² (supuesto no validado)",
+      "unit": "S/ por m² simulado"
+    },
+    {
+      "service": "Toldos · Lona orillo rojo DEMO",
+      "rate": 122.0,
+      "rule": "tarifa sintética por m² (supuesto no validado)",
+      "unit": "S/ por m² simulado"
+    },
+    {
+      "service": "Tapizado de moto · Oxford DEMO",
       "rate": 155.0,
-      "rule": "área equivalente × tarifa",
+      "rule": "tarifa sintética por m² (supuesto no validado)",
       "unit": "S/ por m² equivalente DEMO"
     }
   ],
@@ -79,15 +138,15 @@
     {
       "quote_id": "SYN-001",
       "service_type": "Carpas",
-      "length_m": 4.0,
-      "width_m": 3.0,
-      "material_name": "Lona PVC DEMO",
-      "required_material_quantity": 13.44,
-      "stock_snapshot_quantity": 32.0,
+      "length_m": 2.0,
+      "width_m": 2.0,
+      "material_name": "Lino liviano DEMO",
+      "required_material_quantity": 4.48,
+      "stock_snapshot_quantity": 28.0,
       "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 241.92,
-      "simulated_final_price": 1112.53,
-      "simulated_gross_contribution_before_labor_overhead": 870.61,
+      "simulated_direct_material_cost": 98.56,
+      "simulated_final_price": 421.59,
+      "simulated_gross_contribution_before_labor_overhead": 323.03,
       "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
     },
     {
@@ -107,15 +166,15 @@
     {
       "quote_id": "SYN-003",
       "service_type": "Tapizado de moto",
-      "length_m": 2.0,
+      "length_m": 3.0,
       "width_m": 2.0,
       "material_name": "Oxford DEMO",
-      "required_material_quantity": 2.2,
+      "required_material_quantity": 3.3,
       "stock_snapshot_quantity": 9.0,
       "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 83.6,
-      "simulated_final_price": 552.54,
-      "simulated_gross_contribution_before_labor_overhead": 468.94,
+      "simulated_direct_material_cost": 125.4,
+      "simulated_final_price": 828.82,
+      "simulated_gross_contribution_before_labor_overhead": 703.42,
       "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
     },
     {
@@ -123,69 +182,69 @@
       "service_type": "Carpas",
       "length_m": 2.0,
       "width_m": 2.0,
-      "material_name": "Lona PVC DEMO",
+      "material_name": "Lino liviano DEMO",
       "required_material_quantity": 4.48,
-      "stock_snapshot_quantity": 32.0,
+      "stock_snapshot_quantity": 28.0,
       "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 80.64,
-      "simulated_final_price": 377.3,
-      "simulated_gross_contribution_before_labor_overhead": 296.66,
+      "simulated_direct_material_cost": 98.56,
+      "simulated_final_price": 428.93,
+      "simulated_gross_contribution_before_labor_overhead": 330.37,
       "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
     },
     {
       "quote_id": "SYN-005",
       "service_type": "Toldos",
-      "length_m": 3.0,
-      "width_m": 2.0,
+      "length_m": 5.0,
+      "width_m": 4.0,
       "material_name": "Tarflex DEMO",
-      "required_material_quantity": 6.6,
+      "required_material_quantity": 22.0,
       "stock_snapshot_quantity": 24.0,
       "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 151.8,
-      "simulated_final_price": 595.86,
-      "simulated_gross_contribution_before_labor_overhead": 444.06,
+      "simulated_direct_material_cost": 506.0,
+      "simulated_final_price": 1986.21,
+      "simulated_gross_contribution_before_labor_overhead": 1480.21,
       "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
     },
     {
       "quote_id": "SYN-006",
       "service_type": "Tapizado de moto",
-      "length_m": 4.0,
-      "width_m": 3.0,
+      "length_m": 2.0,
+      "width_m": 2.0,
       "material_name": "Oxford DEMO",
-      "required_material_quantity": 6.6,
+      "required_material_quantity": 2.2,
       "stock_snapshot_quantity": 9.0,
       "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 250.8,
-      "simulated_final_price": 1855.35,
-      "simulated_gross_contribution_before_labor_overhead": 1604.55,
+      "simulated_direct_material_cost": 83.6,
+      "simulated_final_price": 618.45,
+      "simulated_gross_contribution_before_labor_overhead": 534.85,
       "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
     },
     {
       "quote_id": "SYN-007",
       "service_type": "Carpas",
-      "length_m": 2.0,
-      "width_m": 2.0,
-      "material_name": "Lona PVC DEMO",
-      "required_material_quantity": 4.48,
-      "stock_snapshot_quantity": 32.0,
-      "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 80.64,
-      "simulated_final_price": 311.94,
-      "simulated_gross_contribution_before_labor_overhead": 231.3,
-      "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
+      "length_m": 5.0,
+      "width_m": 4.0,
+      "material_name": "Lino pesado DEMO",
+      "required_material_quantity": 31.0,
+      "stock_snapshot_quantity": 20.0,
+      "material_shortage_quantity": 11.0,
+      "simulated_direct_material_cost": 899.0,
+      "simulated_final_price": 2770.54,
+      "simulated_gross_contribution_before_labor_overhead": 1871.54,
+      "synthetic_feasibility_result": "FALTA_STOCK"
     },
     {
       "quote_id": "SYN-008",
       "service_type": "Toldos",
-      "length_m": 3.0,
+      "length_m": 2.0,
       "width_m": 2.0,
-      "material_name": "Tarflex DEMO",
-      "required_material_quantity": 6.6,
-      "stock_snapshot_quantity": 24.0,
+      "material_name": "Lona orillo azul DEMO",
+      "required_material_quantity": 4.4,
+      "stock_snapshot_quantity": 22.0,
       "material_shortage_quantity": 0.0,
-      "simulated_direct_material_cost": 151.8,
-      "simulated_final_price": 593.64,
-      "simulated_gross_contribution_before_labor_overhead": 441.84,
+      "simulated_direct_material_cost": 110.0,
+      "simulated_final_price": 424.03,
+      "simulated_gross_contribution_before_labor_overhead": 314.03,
       "synthetic_feasibility_result": "FACTIBLE_CON_REGLAS_SINTETICAS"
     }
   ]

@@ -1,4 +1,8 @@
-service_type,material_name,rate_per_m2,closed_tent_multiplier,discount_source,simulation_flag
-Carpas,Lona PVC DEMO,95.00,1.35,synthetic_quotes_200.csv,true
-Toldos,Tarflex DEMO,112.00,1.00,synthetic_quotes_200.csv,true
-Tapizado de moto,Oxford DEMO,155.00,1.00,synthetic_quotes_200.csv,true
+service_type,material_name,material_variant,rate_per_m2,closed_tent_multiplier,discount_source,simulation_flag
+Carpas,Lino económico DEMO,ECONOMICO,95.00,1.35,supuesto_de_demo_no_validado,true
+Carpas,Lino liviano DEMO,LIVIANO,108.00,1.35,supuesto_de_demo_no_validado,true
+Carpas,Lino pesado DEMO,PESADO,125.00,1.35,supuesto_de_demo_no_validado,true
+Toldos,Tarflex DEMO,ESTANDAR,112.00,1.00,supuesto_de_demo_no_validado,true
+Toldos,Lona orillo azul DEMO,ESTANDAR,120.00,1.00,supuesto_de_demo_no_validado,true
+Toldos,Lona orillo rojo DEMO,ESTANDAR,122.00,1.00,supuesto_de_demo_no_validado,true
+Tapizado de moto,Oxford DEMO,NO_APLICA,155.00,1.00,supuesto_de_demo_no_validado,true

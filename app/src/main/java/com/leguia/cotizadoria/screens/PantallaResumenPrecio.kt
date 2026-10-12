@@ -56,6 +56,11 @@ fun PantallaResumenPrecio(
                     Text("Solicitud", style = MaterialTheme.typography.titleMedium)
                     Text(cotizacion.requerimientoCliente, style = MaterialTheme.typography.bodyLarge)
                     Text("Tamaño: ${dimensiones.ifBlank { "Sin medidas" }}")
+                    cotizacion.medidaAlto?.let { InfoRow("Altura opcional", "${formatDimension(it)} m") }
+                    cotizacion.materialDescripcion?.let { InfoRow("Material", it) }
+                    if (cotizacion.medidaAlto != null) {
+                        Text("La altura queda registrada, pero las tarifas y el consumo configurados actualmente se basan en largo × ancho. Confirma con el jefe si la altura cambia el precio o el material necesario.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
                     cotizacion.tipoCarpa?.let { type ->
                         InfoRow("Carpa", if (type == "CERRADA") "Cerrada" else "Abierta")
                         if (type == "CERRADA") {

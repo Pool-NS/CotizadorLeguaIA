@@ -1,4 +1,8 @@
-material_name,stock_quantity,unit,synthetic_unit_cost,simulation_flag
-Lona PVC DEMO,32.00,m² simulado,18.00,true
-Tarflex DEMO,24.00,m² simulado,23.00,true
-Oxford DEMO,9.00,m² equivalente DEMO,38.00,true
+service_type,material_name,material_variant,stock_quantity,unit,synthetic_unit_cost,simulation_flag
+Carpas,Lino económico DEMO,ECONOMICO,32.00,m² simulado,18.00,true
+Carpas,Lino liviano DEMO,LIVIANO,28.00,m² simulado,22.00,true
+Carpas,Lino pesado DEMO,PESADO,20.00,m² simulado,29.00,true
+Toldos,Tarflex DEMO,ESTANDAR,24.00,m² simulado,23.00,true
+Toldos,Lona orillo azul DEMO,ESTANDAR,22.00,m² simulado,25.00,true
+Toldos,Lona orillo rojo DEMO,ESTANDAR,18.00,m² simulado,26.00,true
+Tapizado de moto,Oxford DEMO,NO_APLICA,9.00,m² equivalente DEMO,38.00,true

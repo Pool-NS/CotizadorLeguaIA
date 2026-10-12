@@ -17,6 +17,13 @@ data class SyntheticDemoPriceRule(
     val unit: String
 )
 
+data class SyntheticDemoServiceSummary(
+    val service: String,
+    val quotes: Int,
+    val simulatedTotal: Double,
+    val shortages: Int
+)
+
 data class SyntheticDemoQuote(
     val id: String,
     val service: String,
@@ -44,6 +51,7 @@ data class SyntheticDemoDashboard(
     val feasibilityCounts: Map<String, Int>,
     val inventory: List<SyntheticDemoInventory>,
     val priceRules: List<SyntheticDemoPriceRule>,
+    val serviceSummary: List<SyntheticDemoServiceSummary>,
     val sampleQuotes: List<SyntheticDemoQuote>
 )
 
@@ -98,6 +106,20 @@ object SyntheticDemoDataLoader {
                 feasibility = item.getString("synthetic_feasibility_result")
             )
         }
+        val serviceJson = root.getJSONObject("service_summary")
+        val services = buildList {
+            val keys = serviceJson.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = serviceJson.getJSONObject(key)
+                add(SyntheticDemoServiceSummary(
+                    service = if (key == "Tapizado") "Tapizado de moto" else key,
+                    quotes = item.getInt("quotes"),
+                    simulatedTotal = item.getDouble("simulated_final_total"),
+                    shortages = item.getInt("material_shortages")
+                ))
+            }
+        }.sortedBy { it.service }
         return SyntheticDemoDashboard(
             quoteCount = root.getInt("quote_count"),
             averageMinutes = root.getDouble("mean_quote_minutes"),
@@ -110,6 +132,7 @@ object SyntheticDemoDataLoader {
             feasibilityCounts = feasibilityCounts,
             inventory = inventory,
             priceRules = priceRules,
+            serviceSummary = services,
             sampleQuotes = samples
         )
     }

@@ -14,7 +14,7 @@ Android Studio compatible con AGP 8.7.2, JDK 17 y Android SDK 35. Abre el direct
 
 Para desplegar el backend de demostración en Render consulta [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md). El plan Free puede suspenderse por inactividad y el backend aún no incluye autenticación ni límites de uso para un despliegue operativo multiusuario.
 
-En `Panel de Administración` el jefe puede guardar precios aprobados por servicio, tamaño exacto, material y tipo de carpa (abierta/cerrada), y registrar ingresos de materiales. Las carpas cerradas capturan ventanas y puertas; el tapizado se especifica como `Tapizado de moto` con tipo/modelo. La app no solicita altura y solo aplica coincidencias exactas de servicio, tamaño, material y variante; si falta un material o su tarifa, la solicitud queda pendiente para revisión.
+En `Panel de Administración` el jefe puede guardar precios aprobados por servicio, tamaño exacto, material y tipo de carpa (abierta/cerrada), y registrar ingresos de materiales. El formulario ofrece lino económico/liviano/pesado para carpas y Tarflex/lona orillo azul/rojo para toldos; permite seleccionar medidas frecuentes, ingresar otras medidas y añadir altura opcional. Las carpas cerradas capturan ventanas y puertas. Si se ingresa altura, queda registrada, pero las reglas actuales cotizan largo × ancho; confírmalo con el jefe si cambia precio o consumo. Estas opciones no crean tarifas ni reglas de consumo por sí solas: el jefe debe registrar los precios aprobados, y el consumo real de materiales requiere una receta validada. El demo de 200 filas está claramente separado del historial real; [documentación de la demo](qa/data/README_STOCK_DEMO.md).
 
 ## Datos y modelo
 
@@ -23,6 +23,8 @@ La base de datos actual es Room local en cada instalación Android. FastAPI reci
 ## Dataset de 200 registros
 
 El archivo `qa/data/synthetic_quotes_200.csv` se abre directamente en jamovi o SPSS; no se carga en Room. Sus 200 registros son sintéticos y sirven para practicar, no como datos históricos reales ni evidencia empírica de Leguía. El demo con tarifas y stock simulados está en [qa/data/README_STOCK_DEMO.md](qa/data/README_STOCK_DEMO.md) y se abre desde Panel de Administración. Para recolectar observaciones reales pretest/posttest, usa la plantilla `qa/data/observed_quotes_template.csv` y sigue [docs/THESIS_DATA_GUIDE.md](docs/THESIS_DATA_GUIDE.md).
+
+El libro de práctica [synthetic_quotes_stock_smartpls_demo.xlsx](qa/data/synthetic_quotes_stock_smartpls_demo.xlsx) contiene dashboard con barras, base de 200 filas, inventario/tarifas sintéticas y hoja de precios por validar. No promete un alfa de Cronbach; la confiabilidad debe estimarse con el instrumento real aprobado.
 
 ## IA y predicción
 

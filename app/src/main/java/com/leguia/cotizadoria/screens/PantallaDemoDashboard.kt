@@ -1,15 +1,18 @@
 package com.leguia.cotizadoria.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -47,14 +50,14 @@ fun PantallaDemoDashboard(data: SyntheticDemoDashboard, onVolver: () -> Unit) {
         Text("*Precio menos material estimado; no incluye mano de obra, gastos indirectos, impuestos ni otros costos.", style = MaterialTheme.typography.bodySmall)
 
         Text("Resultado de factibilidad", style = MaterialTheme.typography.titleLarge)
-        data.feasibilityCounts.forEach { (status, count) ->
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(statusLabel(status), modifier = Modifier.weight(1f))
-                    Text(count.toString(), style = MaterialTheme.typography.titleMedium)
-                }
-            }
-        }
+        BarChart(
+            values = data.feasibilityCounts.entries.sortedByDescending { it.value }.map { statusLabel(it.key) to it.value },
+            errorLabels = setOf("Falta material en el escenario", "Revisar datos incompletos", "Revisar aporte directo")
+        )
+
+        Text("Cotizaciones por servicio", style = MaterialTheme.typography.titleLarge)
+        BarChart(data.serviceSummary.map { it.service to it.quotes })
+        Text("Los gráficos cuentan escenarios generados; no muestran resultados reales de la empresa.", style = MaterialTheme.typography.bodySmall)
 
         Text("Inventario simulado", style = MaterialTheme.typography.titleLarge)
         data.inventory.forEach { item ->
@@ -97,6 +100,29 @@ private fun MetricCard(label: String, value: String, modifier: Modifier) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(value, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
             Text(label, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun BarChart(values: List<Pair<String, Int>>, errorLabels: Set<String> = emptySet()) {
+    val maximum = values.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            values.forEach { (label, value) ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(value.toString(), style = MaterialTheme.typography.labelLarge)
+                    }
+                    Box(Modifier.fillMaxWidth().height(14.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                        Box(
+                            Modifier.fillMaxWidth(value.toFloat() / maximum).fillMaxHeight()
+                                .background(if (label in errorLabels) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                }
+            }
         }
     }
 }
