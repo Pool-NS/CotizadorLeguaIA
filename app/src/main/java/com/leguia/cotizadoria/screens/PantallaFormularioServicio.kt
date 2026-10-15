@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -63,8 +64,6 @@ fun PantallaFormularioServicio(
     var cantidadVentanas by remember(servicioId) { mutableStateOf("") }
     var cantidadPuertas by remember(servicioId) { mutableStateOf("") }
     var medidaAlto by remember(servicioId) { mutableStateOf("") }
-    var materialMenuExpanded by remember { mutableStateOf(false) }
-    var sizeMenuExpanded by remember { mutableStateOf(false) }
     var errorFormulario by remember { mutableStateOf<String?>(null) }
     var iaAplicada by remember { mutableStateOf(false) }
     var corregidaPorPersona by remember { mutableStateOf(false) }
@@ -151,22 +150,23 @@ fun PantallaFormularioServicio(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text("Medidas en metros", style = MaterialTheme.typography.titleMedium)
-        androidx.compose.material3.OutlinedButton(onClick = { sizeMenuExpanded = true }) {
-            Text("Elegir medida frecuente")
-        }
-        DropdownMenu(expanded = sizeMenuExpanded, onDismissRequest = { sizeMenuExpanded = false }) {
-            listOf("2 × 2" to (2.0 to 2.0), "2.5 × 2" to (2.5 to 2.0), "3 × 2" to (3.0 to 2.0),
-                "3 × 4" to (3.0 to 4.0), "4 × 3" to (4.0 to 3.0), "4 × 4" to (4.0 to 4.0),
-                "5 × 4" to (5.0 to 4.0), "6 × 3" to (6.0 to 3.0), "6 × 4" to (6.0 to 4.0),
-                "6 × 5" to (6.0 to 5.0), "2 × 6" to (2.0 to 6.0), "6 × 6" to (6.0 to 6.0),
-                "7 × 4" to (7.0 to 4.0)).forEach { (label, dimensions) ->
-                DropdownMenuItem(text = { Text("$label m") }, onClick = {
+        Text("1. Elige las medidas", style = MaterialTheme.typography.titleMedium)
+        Text("Largo × ancho en metros. Desliza para ver más tamaños.", style = MaterialTheme.typography.bodySmall)
+        val medidasFrecuentes = listOf(
+            "2 × 2" to (2.0 to 2.0), "2.5 × 2" to (2.5 to 2.0), "3 × 2" to (3.0 to 2.0),
+            "3 × 4" to (3.0 to 4.0), "4 × 3" to (4.0 to 3.0), "4 × 4" to (4.0 to 4.0),
+            "5 × 4" to (5.0 to 4.0), "6 × 3" to (6.0 to 3.0), "6 × 4" to (6.0 to 4.0),
+            "6 × 5" to (6.0 to 5.0), "2 × 6" to (2.0 to 6.0), "6 × 6" to (6.0 to 6.0),
+            "7 × 4" to (7.0 to 4.0)
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(medidasFrecuentes) { (label, dimensions) ->
+                val selected = medidaLargo.toDoubleOrNull() == dimensions.first && medidaAncho.toDoubleOrNull() == dimensions.second
+                FilterChip(selected = selected, onClick = {
                     medidaLargo = dimensions.first.toString()
                     medidaAncho = dimensions.second.toString()
-                    sizeMenuExpanded = false
                     if (iaAplicada) corregidaPorPersona = true
-                })
+                }, label = { Text("$label m") })
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -204,40 +204,51 @@ fun PantallaFormularioServicio(
             modifier = Modifier.fillMaxWidth(), singleLine = true
         )
 
-        if (opcionesMaterial.isNotEmpty()) {
-            Text("Material", style = MaterialTheme.typography.titleMedium)
-            androidx.compose.material3.OutlinedButton(onClick = { materialMenuExpanded = true }) {
-                Text(material.ifBlank { "Seleccionar material" })
-            }
-            DropdownMenu(expanded = materialMenuExpanded, onDismissRequest = { materialMenuExpanded = false }) {
-                opcionesMaterial.forEach { option ->
-                    DropdownMenuItem(text = { Text(option) }, onClick = {
-                        material = option
-                        materialMenuExpanded = false
-                        if (iaAplicada) corregidaPorPersona = true
-                    })
+        Text("2. Elige el material", style = MaterialTheme.typography.titleMedium)
+        when {
+            opcionesMaterial.isNotEmpty() -> {
+                Text("Selecciona una opción o indica otra. El precio requiere una tarifa aprobada para el material exacto.", style = MaterialTheme.typography.bodySmall)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(opcionesMaterial) { option ->
+                        FilterChip(selected = material == option, onClick = {
+                            material = option
+                            if (iaAplicada) corregidaPorPersona = true
+                        }, label = { Text(option) })
+                    }
+                    item {
+                        FilterChip(selected = material.isBlank(), onClick = {
+                            material = ""
+                            if (iaAplicada) corregidaPorPersona = true
+                        }, label = { Text("Otro") })
+                    }
                 }
-                DropdownMenuItem(text = { Text("Otro (escribir)") }, onClick = {
-                    material = ""
-                    materialMenuExpanded = false
-                })
+                if (material.isBlank()) {
+                    OutlinedTextField(
+                        value = material,
+                        onValueChange = { material = it; if (iaAplicada) corregidaPorPersona = true },
+                        label = { Text("Escribe el material") },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true
+                    )
+                }
+                Text("Las carpas se cotizan con lino económico, liviano o pesado. Los toldos usan Tarflex o lona según la opción elegida.", style = MaterialTheme.typography.bodySmall)
             }
-            if (material.isBlank()) {
+            isMoto -> {
                 OutlinedTextField(
                     value = material,
                     onValueChange = { material = it; if (iaAplicada) corregidaPorPersona = true },
-                    label = { Text("Especificar otro material") },
+                    label = { Text("Material o acabado (según lo acordado)") },
                     modifier = Modifier.fillMaxWidth(), singleLine = true
                 )
+                Text("El tipo o modelo de moto se especifica abajo. Confirma material y tarifa con el jefe.", style = MaterialTheme.typography.bodySmall)
             }
-            Text("Confirma con el jefe la tarifa, el consumo y el stock de cada variante.", style = MaterialTheme.typography.bodySmall)
-        } else {
+            else -> {
             OutlinedTextField(
                 value = material,
                 onValueChange = { material = it; if (iaAplicada) corregidaPorPersona = true },
-                label = { Text("Material mencionado (revisar)") },
+                label = { Text("Material mencionado (confirmar)") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true
             )
+            }
         }
 
         if (isCarpas) {

@@ -6,13 +6,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,20 +39,49 @@ fun PantallaInventario(
     var tipo by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
     var unidad by remember { mutableStateOf("") }
+    var busqueda by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var aviso by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         EncabezadoPantalla("Materiales y stock", onVolver, subtitulo = "Inventario local")
         Spacer(Modifier.height(8.dp))
-        Text("Ingresos acumulados por material. Verifica que cada unidad sea consistente.", style = MaterialTheme.typography.bodySmall)
+        Card(Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Materiales registrados", style = MaterialTheme.typography.bodySmall)
+                    Text(stock.size.toString(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+                }
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                    Text("Control", style = MaterialTheme.typography.bodySmall)
+                    Text("Existencias", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = busqueda,
+            onValueChange = { busqueda = it },
+            label = { Text("Buscar material") },
+            modifier = Modifier.fillMaxWidth(), singleLine = true
+        )
+        Text("Las cantidades respetan su unidad. Aún no hay mínimos de reposición configurados.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val stockVisible = stock.filter { it.nombreMaterial.contains(busqueda, ignoreCase = true) }
         LazyColumn(Modifier.weight(1f)) {
-            if (stock.isEmpty()) item { Text("Aún no hay materiales registrados.", modifier = Modifier.padding(vertical = 12.dp)) }
-            items(stock) { item ->
+            if (stockVisible.isEmpty()) item {
+                Text(
+                    if (stock.isEmpty()) "Aún no hay materiales. Registra el primer ingreso abajo." else "No hay resultados para esa búsqueda.",
+                    modifier = Modifier.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            items(stockVisible) { item ->
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Column(Modifier.padding(12.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
                         Text(item.nombreMaterial, style = MaterialTheme.typography.titleMedium)
-                        Text("Disponible: ${item.cantidadDisponible} ${item.unidad}")
+                        Text("Existencia registrada", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text("${item.cantidadDisponible} ${item.unidad}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -55,8 +90,24 @@ fun PantallaInventario(
                 Text("Registrar ingreso", style = MaterialTheme.typography.titleLarge)
                 OutlinedTextField(nombre, { nombre = it; error = null }, label = { Text("Material") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 OutlinedTextField(tipo, { tipo = it }, label = { Text("Tipo o categoría (opcional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                OutlinedTextField(cantidad, { cantidad = it; error = null }, label = { Text("Cantidad que ingresa") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                OutlinedTextField(unidad, { unidad = it; error = null }, label = { Text("Unidad (m, m², unidad, kg...)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(
+                    cantidad, { cantidad = it; error = null }, label = { Text("Cantidad que ingresa") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+                Text("Unidad de medida", style = MaterialTheme.typography.labelLarge)
+                val unidadesFrecuentes = listOf("m", "m²", "kg", "rollo", "unidad")
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(unidadesFrecuentes) { opcion ->
+                        FilterChip(selected = unidad == opcion, onClick = { unidad = opcion; error = null }, label = { Text(opcion) })
+                    }
+                    item {
+                        FilterChip(selected = unidad.isNotBlank() && unidad !in unidadesFrecuentes, onClick = { unidad = "" }, label = { Text("Otra") })
+                    }
+                }
+                if (unidad.isBlank() || unidad !in unidadesFrecuentes) {
+                    OutlinedTextField(unidad, { unidad = it; error = null }, label = { Text("Especifica otra unidad") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 aviso?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
                 Spacer(Modifier.height(8.dp))

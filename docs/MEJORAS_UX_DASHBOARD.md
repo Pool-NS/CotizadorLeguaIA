@@ -8,6 +8,9 @@ Fecha: 2026-10-15.
 - El formulario conserva campos editables para cualquier medida y presenta un selector con medidas frecuentes del catálogo informado. Largo y ancho se pueden corregir después de elegir; altura sigue siendo opcional.
 - Los campos de dimensiones usan teclado decimal. La selección de tamaño no aprueba tarifas: la app solo cotiza si existe una regla exacta activa para el servicio, material, variante y medida.
 - El dashboard de prueba reduce textos repetidos y deja inventario, tarifas demo y casos de muestra dentro de secciones que se expanden bajo demanda.
+- La captura de medidas ahora ofrece un carrusel horizontal de tamaños frecuentes `largo × ancho`; al tocar una opción rellena ambos campos y se pueden editar o escribir otros valores.
+- Los materiales aprobados conocidos aparecen como opciones táctiles dentro del servicio seleccionado: lino para carpas y Tarflex/lona para toldos. Tapizado permite describir el material o acabado, sin inventar un catálogo o tarifa.
+- El inventario muestra la cantidad de materiales registrados, permite buscar por nombre, facilita unidades frecuentes y separa visualmente nombre y existencia. No muestra alertas de “stock bajo” porque todavía no se han definido niveles mínimos ni reglas de consumo reales.
 
 ## Gráficos y significado
 
@@ -44,6 +47,6 @@ La interfaz se diseñó con criterios de usabilidad y la seguridad se documenta 
 
 ## Verificación de esta versión
 
-El 2026-10-15 se ejecutaron `:app:testDebugUnitTest`, `:app:lintDebug` y `:app:assembleDebug` para la política local de credenciales; pasaron 22 pruebas unitarias, lint terminó con 0 errores y 2 avisos (target API 35 y Kapt en Room), y se generó `app/build/outputs/apk/debug/app-debug.apk` como versión 1.3.1. Falta validar el flujo y el diseño en un teléfono.
+La versión 1.4.0 incorpora el carrusel de medidas, selección táctil de materiales y búsqueda/resumen del stock local. La generación de la APK y la verificación en dispositivo siguen pendientes para esta revisión.
 
 Para publicar una app nueva o actualizarla en Google Play, desde el 31 de agosto de 2026 se requiere target API 36. Este prototipo sigue en target 35 porque el proyecto aún usa AGP 8.7.2 y SDK 35; se requiere actualizar la cadena Android, probar los cambios de comportamiento de Android 16 y volver a generar el artefacto antes de una publicación. Referencia oficial: https://developer.android.com/google/play/requirements/target-sdk y https://developer.android.com/about/versions/16/setup-sdk.
