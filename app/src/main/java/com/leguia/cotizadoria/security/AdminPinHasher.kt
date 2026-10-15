@@ -15,6 +15,17 @@ object AdminPinHasher {
 
     data class Credential(val salt: String, val hash: String, val algorithm: String)
 
+    fun validateNewPassword(password: String): String? = when {
+        password.length < 12 -> "Usa al menos 12 caracteres."
+        password.length > 64 -> "Usa como máximo 64 caracteres."
+        password.none(Char::isUpperCase) -> "Agrega al menos una letra mayúscula."
+        password.none(Char::isLowerCase) -> "Agrega al menos una letra minúscula."
+        password.none(Char::isDigit) -> "Agrega al menos un número."
+        password.none { !it.isLetterOrDigit() && !it.isWhitespace() } ->
+            "Agrega al menos un símbolo (por ejemplo: !, @ o #)."
+        else -> null
+    }
+
     fun create(pin: String): Credential {
         val salt = ByteArray(SALT_BYTES).also(SecureRandom()::nextBytes)
         val algorithm = supportedAlgorithm()

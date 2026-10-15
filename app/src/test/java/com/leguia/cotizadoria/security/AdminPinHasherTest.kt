@@ -2,10 +2,20 @@ package com.leguia.cotizadoria.security
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AdminPinHasherTest {
+    @Test
+    fun `new password policy requires length and character classes`() {
+        assertNull(AdminPinHasher.validateNewPassword("CarpaSegura2026!"))
+        assertNotNull(AdminPinHasher.validateNewPassword("carpasegura2026!"))
+        assertNotNull(AdminPinHasher.validateNewPassword("CarpaSegura2026"))
+        assertNotNull(AdminPinHasher.validateNewPassword("Carpa!"))
+    }
+
     @Test
     fun credentialUsesUniqueSaltAndVerifiesOnlyMatchingPin() {
         val first = AdminPinHasher.create("123456")

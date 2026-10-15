@@ -25,9 +25,9 @@ La conversión se calcula como `concretadas / (concretadas + no concretadas)`. L
 
 ## Política de acceso
 
-El acceso actual es un PIN numérico local de jefe, no una cuenta de identidad. Los nuevos PIN tienen entre 8 y 12 dígitos, quedan derivados con PBKDF2 y sal aleatoria, y el formulario bloquea durante 60 segundos tras cinco intentos fallidos. No exige mayúscula ni símbolo: ISO/IEC 27001 no impone una combinación universal de caracteres. Su control A.5.17 trata de la gestión organizacional de información de autenticación. ISO 9001 es una norma de gestión de calidad, no define reglas de caracteres para credenciales. Ninguna de estas referencias certifica la app.
+El acceso del jefe es una contraseña local, no una cuenta de identidad. Las nuevas contraseñas deben tener 12–64 caracteres e incluir mayúscula, minúscula, número y símbolo; se derivan con PBKDF2 y sal aleatoria. La app bloquea durante 60 segundos tras cinco intentos fallidos. Esta es una política interna solicitada para el proyecto: A.5.17 de ISO/IEC 27001 aborda la gestión de información de autenticación y no prescribe por sí mismo esas clases de caracteres. ISO 9001 tampoco define reglas de caracteres. Ninguna de estas referencias certifica la app.
 
-Los PIN previos no se invalidan automáticamente. La app tampoco provee usuarios individuales ni autorización central; el backend y los datos Room continúan sin autenticación multiusuario compartida. Para ponerla en producción con trabajadores se requiere diseñar cuentas, roles, recuperación, protección de sesión, API autenticada y almacenamiento central. El PIN local no basta para proteger administración en una flota compartida.
+La primera vez que una contraseña previa no cumpla la nueva política, debe verificarse y luego actualizarse antes de entrar al panel. La app tampoco provee usuarios individuales ni autorización central; el backend y los datos Room continúan sin autenticación multiusuario compartida. Para ponerla en producción con trabajadores se requiere diseñar cuentas, roles, recuperación, protección de sesión, API autenticada y almacenamiento central. La contraseña local no basta para proteger administración en una flota compartida.
 
 ## Lista de validación manual
 
@@ -35,7 +35,7 @@ Los PIN previos no se invalidan automáticamente. La app tampoco provee usuarios
 2. Abrir demo; comprobar que cada sección de inventario, tarifas y muestras se pueda expandir y contraer.
 3. Revisar que todos los gráficos muestren sus etiquetas y que el demo identifique explícitamente datos sintéticos.
 4. Registrar cotizaciones con medidas frecuentes, medida personalizada, coma decimal y altura vacía/indicada.
-5. Crear un nuevo PIN de 8 dígitos, confirmar coincidencia, ingresar con el PIN correcto y comprobar el bloqueo tras cinco fallos.
+5. Crear contraseña nueva con las cuatro clases exigidas, comprobar que credenciales débiles sean rechazadas, confirmar coincidencia, ingresar y comprobar el bloqueo tras cinco fallos. Verificar que una instalación con credencial previa siga pudiendo ingresar.
 6. Validar en dispositivo la densidad, lectura, contraste y accesibilidad; la captura de pantalla o compilación no sustituye esta prueba.
 
 ## Alcance de calidad
@@ -44,6 +44,6 @@ La interfaz se diseñó con criterios de usabilidad y la seguridad se documenta 
 
 ## Verificación de esta versión
 
-El 2026-10-15 se ejecutaron `:app:testDebugUnitTest`, `:app:lintDebug` y `:app:assembleDebug`: las 21 pruebas unitarias pasaron, lint terminó con 0 errores y 2 avisos (target API 35 y Kapt en Room), y se generó `app/build/outputs/apk/debug/app-debug.apk` como versión 1.3.0. Falta validar el diseño en el teléfono.
+El 2026-10-15 se ejecutaron `:app:testDebugUnitTest`, `:app:lintDebug` y `:app:assembleDebug` para la política local de credenciales; pasaron 22 pruebas unitarias, lint terminó con 0 errores y 2 avisos (target API 35 y Kapt en Room), y se generó `app/build/outputs/apk/debug/app-debug.apk` como versión 1.3.1. Falta validar el flujo y el diseño en un teléfono.
 
 Para publicar una app nueva o actualizarla en Google Play, desde el 31 de agosto de 2026 se requiere target API 36. Este prototipo sigue en target 35 porque el proyecto aún usa AGP 8.7.2 y SDK 35; se requiere actualizar la cadena Android, probar los cambios de comportamiento de Android 16 y volver a generar el artefacto antes de una publicación. Referencia oficial: https://developer.android.com/google/play/requirements/target-sdk y https://developer.android.com/about/versions/16/setup-sdk.

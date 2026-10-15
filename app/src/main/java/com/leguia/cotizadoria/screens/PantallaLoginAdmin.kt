@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,8 +39,7 @@ private const val ADMIN_PIN_KDF = "pin_kdf"
 private const val LEGACY_ADMIN_PIN_HASH = "pin_sha256"
 private const val FAILED_ATTEMPTS = "failed_pin_attempts"
 private const val LOCKED_UNTIL = "pin_locked_until"
-private const val MIN_ADMIN_PIN_DIGITS = 8
-private const val MAX_ADMIN_PIN_DIGITS = 12
+private const val MAX_ADMIN_PASSWORD_LENGTH = 64
 private const val MAX_FAILED_ATTEMPTS = 5
 private const val LOCK_DURATION_MILLIS = 60_000L
 
@@ -53,8 +51,10 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
     var pin by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var mustUpgradePassword by remember { mutableStateOf(false) }
     val isSetup = preferences.getString(ADMIN_PIN_HASH, null) == null &&
         preferences.getString(LEGACY_ADMIN_PIN_HASH, null) == null
+    val isCredentialSetup = isSetup || mustUpgradePassword
 
     Scaffold(topBar = {
         TopAppBar(
@@ -72,28 +72,29 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                if (isSetup) "Crea un PIN privado para el jefe."
-                else "Ingresa el PIN privado del jefe.",
+                if (isCredentialSetup && mustUpgradePassword) "Actualiza tu contraseña para cumplir la política del proyecto."
+                else if (isCredentialSetup) "Crea una contraseña privada para el jefe."
+                else "Ingresa la contraseña privada del jefe.",
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
                 value = pin,
-                onValueChange = { pin = it.filter(Char::isDigit).take(MAX_ADMIN_PIN_DIGITS); error = null },
-                label = { Text(if (isSetup) "Nuevo PIN (8–12 dígitos)" else "PIN del jefe") },
+                onValueChange = { pin = it.take(MAX_ADMIN_PASSWORD_LENGTH); error = null },
+                label = { Text(if (isCredentialSetup) "Contraseña (12–64 caracteres)" else "Contraseña del jefe") },
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (isSetup) {
+            if (isCredentialSetup) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = confirmation,
-                    onValueChange = { confirmation = it.filter(Char::isDigit).take(MAX_ADMIN_PIN_DIGITS); error = null },
-                    label = { Text("Confirmar PIN") },
+                    onValueChange = { confirmation = it.take(MAX_ADMIN_PASSWORD_LENGTH); error = null },
+                    label = { Text("Confirmar contraseña") },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -103,10 +104,11 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    if (isSetup) {
+                    if (isCredentialSetup) {
                         when {
-                            pin.length < MIN_ADMIN_PIN_DIGITS -> error = "El PIN debe tener al menos $MIN_ADMIN_PIN_DIGITS dígitos."
-                            pin != confirmation -> error = "Los PIN no coinciden."
+                            AdminPinHasher.validateNewPassword(pin) != null ->
+                                error = AdminPinHasher.validateNewPassword(pin)
+                            pin != confirmation -> error = "Las contraseñas no coinciden."
                             else -> {
                                 val credential = AdminPinHasher.create(pin)
                                 preferences.edit()
@@ -116,6 +118,7 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                                     .remove(FAILED_ATTEMPTS)
                                     .remove(LOCKED_UNTIL)
                                     .apply()
+                                mustUpgradePassword = false
                                 onAccesoConcedido()
                             }
                         }
@@ -147,7 +150,14 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                                         .remove(LEGACY_ADMIN_PIN_HASH)
                                 }
                                 editor.apply()
-                                onAccesoConcedido()
+                                if (AdminPinHasher.validateNewPassword(pin) != null) {
+                                    pin = ""
+                                    confirmation = ""
+                                    mustUpgradePassword = true
+                                    error = "Tu contraseña anterior es válida. Crea una nueva con la política actual."
+                                } else {
+                                    onAccesoConcedido()
+                                }
                             } else {
                                 val previousAttempts = if (lockedUntil > 0L) 0 else preferences.getInt(FAILED_ATTEMPTS, 0)
                                 val attempts = previousAttempts + 1
@@ -159,16 +169,24 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                                     error = "Demasiados intentos. Vuelve a probar en 60 s."
                                 } else {
                                     preferences.edit().putInt(FAILED_ATTEMPTS, attempts).remove(LOCKED_UNTIL).apply()
-                                    error = "PIN incorrecto. Intento $attempts de $MAX_FAILED_ATTEMPTS."
+                                    error = "Contraseña incorrecta. Intento $attempts de $MAX_FAILED_ATTEMPTS."
                                 }
                             }
                         }
                     }
                 }
-            ) { Text(if (isSetup) "Crear acceso del jefe" else "Ingresar") }
+            ) {
+                Text(
+                    when {
+                        mustUpgradePassword -> "Actualizar contraseña"
+                        isSetup -> "Crear acceso del jefe"
+                        else -> "Ingresar"
+                    }
+                )
+            }
             Spacer(Modifier.height(8.dp))
             Text(
-                "PIN local de este teléfono; no es una cuenta compartida ni acceso a servidor.",
+                "Contraseña guardada solo en este teléfono; no es una cuenta compartida ni acceso a servidor.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
