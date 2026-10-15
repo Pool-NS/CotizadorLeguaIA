@@ -23,7 +23,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NecesidadAbastecimientoEntity::class,
         PrediccionEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -168,6 +168,48 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private data class TariffSeed(val material: String, val length: Double, val width: Double, val price: Double)
+
+        private val APPROVED_TOLDO_TARIFFS = listOf(
+            TariffSeed("Tarflex 200 gramos", 3.0, 4.0, 120.0),
+            TariffSeed("Tarflex 200 gramos", 4.0, 4.0, 130.0),
+            TariffSeed("Tarflex 200 gramos", 5.0, 4.0, 240.0),
+            TariffSeed("Tarflex 200 gramos", 6.0, 4.0, 150.0),
+            TariffSeed("Tarflex 200 gramos", 6.0, 5.0, 200.0),
+            TariffSeed("Tarflex 200 gramos", 2.0, 6.0, 290.0),
+            TariffSeed("Tarflex 300 gramos", 3.0, 4.0, 200.0),
+            TariffSeed("Tarflex 300 gramos", 4.0, 4.0, 210.0),
+            TariffSeed("Tarflex 300 gramos", 5.0, 4.0, 240.0),
+            TariffSeed("Tarflex 300 gramos", 6.0, 4.0, 270.0),
+            TariffSeed("Tarflex 300 gramos", 6.0, 5.0, 320.0),
+            TariffSeed("Tarflex 300 gramos", 6.0, 6.0, 390.0),
+            TariffSeed("Lona orillo rojo", 6.0, 4.0, 600.0),
+            TariffSeed("Lona orillo rojo", 7.0, 4.0, 700.0)
+        )
+
+        private fun seedToldoTariffs(db: SupportSQLiteDatabase) {
+            val cursor = db.query("SELECT id FROM servicio WHERE nombre = 'Toldos' LIMIT 1")
+            val toldoServiceId = cursor.use { if (it.moveToFirst()) it.getInt(0) else return }
+            APPROVED_TOLDO_TARIFFS.forEach { tariff ->
+                val concept = com.leguia.cotizadoria.domain.DimensionPriceKey.forSize(
+                    tariff.length,
+                    tariff.width,
+                    "BASE",
+                    tariff.material
+                )
+                db.execSQL(
+                    "INSERT INTO parametro_precio (servicioId, concepto, precioUnitario, unidadMedida, activo) VALUES (?, ?, ?, ?, 1)",
+                    arrayOf(toldoServiceId, concept, tariff.price, "cotización")
+                )
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                seedToldoTariffs(db)
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -175,7 +217,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "cotizador_leguia_db"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
@@ -183,6 +225,7 @@ abstract class AppDatabase : RoomDatabase() {
                             db.execSQL("INSERT INTO servicio (id, nombre, descripcion) VALUES (1, 'Carpas', 'Servicio configurable; validar características con Leguía')")
                             db.execSQL("INSERT INTO servicio (id, nombre, descripcion) VALUES (2, 'Toldos', 'Servicio configurable; validar características con Leguía')")
                             db.execSQL("INSERT INTO servicio (id, nombre, descripcion) VALUES (3, 'Tapizado de moto', 'Cotización de tapizado para motocicletas')")
+                            seedToldoTariffs(db)
                         }
                     })
                     .build()

@@ -1,8 +1,6 @@
 package com.leguia.cotizadoria.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.leguia.cotizadoria.data.StockMaterialRow
+import com.leguia.cotizadoria.components.EncabezadoPantalla
 
 @Composable
 fun PantallaInventario(
@@ -39,10 +37,7 @@ fun PantallaInventario(
     var aviso by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Materiales y stock", style = MaterialTheme.typography.headlineSmall)
-            OutlinedButton(onClick = onVolver) { Text("Volver") }
-        }
+        EncabezadoPantalla("Materiales y stock", onVolver, subtitulo = "Inventario local")
         Spacer(Modifier.height(8.dp))
         Text("Ingresos acumulados por material. Verifica que cada unidad sea consistente.", style = MaterialTheme.typography.bodySmall)
         LazyColumn(Modifier.weight(1f)) {

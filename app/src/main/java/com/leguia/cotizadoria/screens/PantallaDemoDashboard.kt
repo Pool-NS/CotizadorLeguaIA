@@ -1,88 +1,107 @@
 package com.leguia.cotizadoria.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.background
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.leguia.cotizadoria.components.EncabezadoPantalla
+import com.leguia.cotizadoria.components.GraficoBarras
+import com.leguia.cotizadoria.components.GraficoDona
 import com.leguia.cotizadoria.data.SyntheticDemoDashboard
 import com.leguia.cotizadoria.data.SyntheticDemoQuote
 import java.util.Locale
 
 @Composable
 fun PantallaDemoDashboard(data: SyntheticDemoDashboard, onVolver: () -> Unit) {
+    var showInventory by remember { mutableStateOf(false) }
+    var showRates by remember { mutableStateOf(false) }
+    var showSamples by remember { mutableStateOf(false) }
+
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Dashboard de demostración", style = MaterialTheme.typography.headlineSmall)
-            OutlinedButton(onClick = onVolver) { Text("Volver") }
-        }
+        EncabezadoPantalla("Dashboard de prueba", onVolver, subtitulo = "Muestra de 200 registros simulados")
         Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("DATOS SINTÉTICOS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
-                Text("Los 200 registros, tarifas y saldos de stock son simulados. Sirven para probar la app y el análisis; no representan historial ni precios reales de Leguía.")
-                Text("La factibilidad se calcula con las reglas ficticias de esta demostración. No reserva inventario ni decide compras.", style = MaterialTheme.typography.bodySmall)
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("DEMO · DATOS SINTÉTICOS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+                Text("No son ventas, precios ni stock reales de Leguía.", style = MaterialTheme.typography.bodyMedium)
+                Text("La factibilidad usa reglas simuladas; no reserva inventario.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Text("Indicadores", style = MaterialTheme.typography.titleLarge)
+        Text("Resumen", style = MaterialTheme.typography.titleLarge)
         MetricRow("Cotizaciones", data.quoteCount.toString(), "Conversión simulada", percent(data.conversionRatePercent))
-        MetricRow("Tiempo promedio", "${decimal(data.averageMinutes)} min", "Precio promedio", money(data.averagePrice))
-        MetricRow("Total cotizado demo", money(data.totalPrices), "Costo directo promedio", money(data.averageDirectCost))
-        MetricRow("Aporte bruto promedio*", money(data.averageContribution), "Margen directo no positivo", data.nonPositiveContributionCount.toString())
-        Text("*Precio menos material estimado; no incluye mano de obra, gastos indirectos, impuestos ni otros costos.", style = MaterialTheme.typography.bodySmall)
+        MetricRow("Tiempo promedio", "${decimal(data.averageMinutes)} min", "Importe promedio", money(data.averagePrice))
+        MetricRow("Material promedio", money(data.averageDirectCost), "Aporte directo*", money(data.averageContribution))
+        Text("*No incluye mano de obra, gastos indirectos ni impuestos.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        Text("Resultado de factibilidad", style = MaterialTheme.typography.titleLarge)
-        BarChart(
-            values = data.feasibilityCounts.entries.sortedByDescending { it.value }.map { statusLabel(it.key) to it.value },
-            errorLabels = setOf("Falta material en el escenario", "Revisar datos incompletos", "Revisar aporte directo")
+        GraficoDona(
+            titulo = "Resultado de factibilidad",
+            valores = data.feasibilityCounts.entries.sortedByDescending { it.value }
+                .map { statusLabel(it.key) to it.value }
         )
+        GraficoBarras(
+            titulo = "Cotizaciones por servicio",
+            valores = data.serviceSummary.map { it.service to it.quotes }
+        )
+        Text("Los indicadores describen solo la simulación; no deben presentarse como resultados observados de la empresa.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        Text("Cotizaciones por servicio", style = MaterialTheme.typography.titleLarge)
-        BarChart(data.serviceSummary.map { it.service to it.quotes })
-        Text("Los gráficos cuentan escenarios generados; no muestran resultados reales de la empresa.", style = MaterialTheme.typography.bodySmall)
-
-        Text("Inventario simulado", style = MaterialTheme.typography.titleLarge)
-        data.inventory.forEach { item ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(item.name, style = MaterialTheme.typography.titleMedium)
-                    Text("Saldo inicial: ${decimal(item.quantity)} ${item.unit}")
-                    Text("Costo de material DEMO: ${money(item.unitCost)} / ${item.unit}", style = MaterialTheme.typography.bodySmall)
-                }
+        DetailSection("Inventario simulado", "${data.inventory.size} materiales", showInventory) { showInventory = !showInventory }
+        if (showInventory) {
+            data.inventory.forEach { item ->
+                DetailCard(item.name, "${decimal(item.quantity)} ${item.unit} disponibles · costo demo ${money(item.unitCost)} / ${item.unit}")
             }
         }
-
-        Text("Tarifas sintéticas", style = MaterialTheme.typography.titleLarge)
-        data.priceRules.forEach { rule ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(rule.service, style = MaterialTheme.typography.titleMedium)
-                    Text("${money(rule.rate)} / m² DEMO · ${rule.rule}")
-                }
+        DetailSection("Reglas de precio demo", "${data.priceRules.size} reglas", showRates) { showRates = !showRates }
+        if (showRates) {
+            data.priceRules.forEach { rule ->
+                DetailCard(rule.service, "${money(rule.rate)} / ${rule.unit} · ${rule.rule}")
             }
         }
+        DetailSection("Escenarios de ejemplo", "${data.sampleQuotes.size} registros", showSamples) { showSamples = !showSamples }
+        if (showSamples) data.sampleQuotes.forEach { SampleQuoteCard(it) }
+        Spacer(Modifier.height(12.dp))
+    }
+}
 
-        Text("Escenarios de ejemplo", style = MaterialTheme.typography.titleLarge)
-        data.sampleQuotes.forEach { quote -> SampleQuoteCard(quote) }
-        Spacer(Modifier.height(8.dp))
+@Composable
+private fun DetailSection(title: String, summary: String, expanded: Boolean, onClick: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            TextButton(onClick = onClick) { Text(if (expanded) "Ocultar" else "Ver") }
+        }
+    }
+}
+
+@Composable
+private fun DetailCard(title: String, detail: String) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(detail, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 
@@ -105,51 +124,23 @@ private fun MetricCard(label: String, value: String, modifier: Modifier) {
 }
 
 @Composable
-private fun BarChart(values: List<Pair<String, Int>>, errorLabels: Set<String> = emptySet()) {
-    val maximum = values.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            values.forEach { (label, value) ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                        Text(value.toString(), style = MaterialTheme.typography.labelLarge)
-                    }
-                    Box(Modifier.fillMaxWidth().height(14.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                        Box(
-                            Modifier.fillMaxWidth(value.toFloat() / maximum).fillMaxHeight()
-                                .background(if (label in errorLabels) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun SampleQuoteCard(quote: SyntheticDemoQuote) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("${quote.id} · ${quote.service}", style = MaterialTheme.typography.titleSmall)
-            Text("${decimal(quote.length)} × ${decimal(quote.width)} m · ${quote.material}")
-            Text("Requiere ${decimal(quote.required)} m² simulados; saldo usado: ${decimal(quote.available)} m²")
-            Text("Precio demo: ${money(quote.simulatedPrice)} · Material demo: ${money(quote.directCost)}")
-            if (quote.shortage > 0.0) {
-                Text("Faltante estimado: ${decimal(quote.shortage)} m²", color = MaterialTheme.colorScheme.error)
-            } else {
-                Text("Material suficiente en este escenario", color = MaterialTheme.colorScheme.primary)
-            }
-            Text(statusLabel(quote.feasibility), style = MaterialTheme.typography.labelMedium)
-            Text("Aporte directo estimado: ${money(quote.contribution)}", style = MaterialTheme.typography.bodySmall)
+            Text("${decimal(quote.length)} × ${decimal(quote.width)} m · ${quote.material}", style = MaterialTheme.typography.bodySmall)
+            Text("Precio demo ${money(quote.simulatedPrice)} · material estimado ${money(quote.directCost)}", style = MaterialTheme.typography.bodySmall)
+            val result = if (quote.shortage > 0.0) "Faltan ${decimal(quote.shortage)} m²" else "Stock suficiente en este escenario"
+            Text(result, color = if (quote.shortage > 0.0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+            Text(statusLabel(quote.feasibility), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
 
 private fun statusLabel(value: String): String = when (value) {
-    "FACTIBLE_CON_REGLAS_SINTETICAS" -> "Factible según reglas sintéticas"
-    "FALTA_STOCK" -> "Falta material en el escenario"
-    "REVISAR_DATOS" -> "Revisar datos incompletos"
+    "FACTIBLE_CON_REGLAS_SINTETICAS" -> "Factible · regla simulada"
+    "FALTA_STOCK" -> "Falta stock · escenario"
+    "REVISAR_DATOS" -> "Revisar datos"
     "REVISAR_MARGEN_DIRECTO" -> "Revisar aporte directo"
     else -> value.replace('_', ' ').lowercase().replaceFirstChar(Char::uppercase)
 }

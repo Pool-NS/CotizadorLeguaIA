@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.leguia.cotizadoria.data.ParametroPrecioEntity
 import com.leguia.cotizadoria.data.ServicioEntity
+import com.leguia.cotizadoria.components.EncabezadoPantalla
 
 @Composable
 fun PantallaTarifas(
@@ -41,10 +42,7 @@ fun PantallaTarifas(
     val variants = remember { mutableStateMapOf<Int, String>() }
     var error by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Precios por medida", style = MaterialTheme.typography.headlineSmall)
-            OutlinedButton(onClick = onVolver) { Text("Volver") }
-        }
+        EncabezadoPantalla("Precios por medida", onVolver, subtitulo = "Tarifas aprobadas")
         Text("Registra el precio aprobado para cada tamaño. Ejemplo: 3 × 2 y 2 × 2 pueden tener valores diferentes.", style = MaterialTheme.typography.bodySmall)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         LazyColumn(Modifier.weight(1f)) {

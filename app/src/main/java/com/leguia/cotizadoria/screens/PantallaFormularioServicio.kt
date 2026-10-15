@@ -27,12 +27,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 
 import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.ai.RequirementInterpretation
 import com.leguia.cotizadoria.domain.SpokenRequirementParser
 import org.json.JSONObject
+import com.leguia.cotizadoria.components.EncabezadoPantalla
 
 @Composable
 fun PantallaFormularioServicio(
@@ -69,7 +72,7 @@ fun PantallaFormularioServicio(
     val isMoto = servicioNombre.equals("Tapizado de moto", ignoreCase = true)
     val opcionesMaterial = when {
         isCarpas -> listOf("Lino económico", "Lino liviano", "Lino pesado")
-        servicioNombre.equals("Toldos", ignoreCase = true) -> listOf("Tarflex", "Lona orillo azul", "Lona orillo rojo")
+        servicioNombre.equals("Toldos", ignoreCase = true) -> listOf("Tarflex 200 gramos", "Tarflex 300 gramos", "Lona orillo azul", "Lona orillo rojo")
         else -> emptyList()
     }
 
@@ -100,7 +103,7 @@ fun PantallaFormularioServicio(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(text = "Nueva cotización", style = MaterialTheme.typography.headlineSmall)
+        EncabezadoPantalla("Nueva cotización", onVolver, subtitulo = servicioNombre)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Text(text = servicioNombre, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
@@ -153,10 +156,14 @@ fun PantallaFormularioServicio(
             Text("Elegir medida frecuente")
         }
         DropdownMenu(expanded = sizeMenuExpanded, onDismissRequest = { sizeMenuExpanded = false }) {
-            listOf(2 to 2, 3 to 2, 3 to 3, 4 to 3, 5 to 4, 6 to 4).forEach { (length, width) ->
-                DropdownMenuItem(text = { Text("${length} × ${width} m") }, onClick = {
-                    medidaLargo = length.toString()
-                    medidaAncho = width.toString()
+            listOf("2 × 2" to (2.0 to 2.0), "2.5 × 2" to (2.5 to 2.0), "3 × 2" to (3.0 to 2.0),
+                "3 × 4" to (3.0 to 4.0), "4 × 3" to (4.0 to 3.0), "4 × 4" to (4.0 to 4.0),
+                "5 × 4" to (5.0 to 4.0), "6 × 3" to (6.0 to 3.0), "6 × 4" to (6.0 to 4.0),
+                "6 × 5" to (6.0 to 5.0), "2 × 6" to (2.0 to 6.0), "6 × 6" to (6.0 to 6.0),
+                "7 × 4" to (7.0 to 4.0)).forEach { (label, dimensions) ->
+                DropdownMenuItem(text = { Text("$label m") }, onClick = {
+                    medidaLargo = dimensions.first.toString()
+                    medidaAncho = dimensions.second.toString()
                     sizeMenuExpanded = false
                     if (iaAplicada) corregidaPorPersona = true
                 })
@@ -167,19 +174,33 @@ fun PantallaFormularioServicio(
                 value = medidaLargo,
                 onValueChange = { medidaLargo = it; if (iaAplicada) corregidaPorPersona = true },
                 label = { Text("Largo (m)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f), singleLine = true
             )
             OutlinedTextField(
                 value = medidaAncho,
                 onValueChange = { medidaAncho = it; if (iaAplicada) corregidaPorPersona = true },
                 label = { Text("Ancho (m)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f), singleLine = true
             )
+        }
+        if (isCarpas) {
+            val length = medidaLargo.replace(',', '.').toDoubleOrNull()
+            val width = medidaAncho.replace(',', '.').toDoubleOrNull()
+            val largestDimension = listOfNotNull(length, width).maxOrNull()
+            if (length != null && width != null && largestDimension != null && length > 0.0 && width > 0.0) {
+                Text(
+                    "Estructura según la regla indicada: ${if (largestDimension >= 4.0) "tubo galvanizado" else "tubo electro"}.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
         OutlinedTextField(
             value = medidaAlto,
             onValueChange = { medidaAlto = it; if (iaAplicada) corregidaPorPersona = true },
             label = { Text("Altura (m, opcional)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(), singleLine = true
         )
 
@@ -338,6 +359,5 @@ fun PantallaFormularioServicio(
         ) {
             Text("Revisar cotización")
         }
-        OutlinedButton(onClick = onVolver, modifier = Modifier.fillMaxWidth()) { Text("Volver a servicios") }
     }
 }

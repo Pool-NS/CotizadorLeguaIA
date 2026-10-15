@@ -14,7 +14,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +24,7 @@ import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.StockMaterialRow
 import com.leguia.cotizadoria.domain.MaterialReadinessEvaluator
 import com.leguia.cotizadoria.domain.MaterialReadinessStatus
+import com.leguia.cotizadoria.components.EncabezadoPantalla
 import java.util.Locale
 
 @Composable
@@ -39,7 +39,7 @@ fun PantallaResumenPrecio(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Resumen de cotización", style = MaterialTheme.typography.headlineSmall)
+        EncabezadoPantalla("Resumen de cotización", onVolver, subtitulo = "Revisa antes de guardar")
         if (cotizacion == null) {
             Text("No hay datos de cotización disponibles.")
         } else {
@@ -63,6 +63,10 @@ fun PantallaResumenPrecio(
                     }
                     cotizacion.tipoCarpa?.let { type ->
                         InfoRow("Carpa", if (type == "CERRADA") "Cerrada" else "Abierta")
+                        val largestDimension = listOfNotNull(cotizacion.medidaLargo, cotizacion.medidaAncho).maxOrNull()
+                        if (largestDimension != null) {
+                            InfoRow("Estructura", if (largestDimension >= 4.0) "Tubo galvanizado" else "Tubo electro")
+                        }
                         if (type == "CERRADA") {
                             InfoRow("Ventanas", cotizacion.cantidadVentanas?.toString() ?: "—")
                             InfoRow("Puertas", cotizacion.cantidadPuertas?.toString() ?: "—")
@@ -107,7 +111,6 @@ fun PantallaResumenPrecio(
                 Text(if (cotizacion.estado == "PENDIENTE_PRECIO") "Guardar solicitud pendiente" else "Confirmar y guardar")
             }
         }
-        OutlinedButton(onClick = onVolver, modifier = Modifier.fillMaxWidth()) { Text("Volver a editar") }
     }
 }
 

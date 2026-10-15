@@ -16,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.leguia.cotizadoria.security.AdminPinHasher
 
 private const val ADMIN_PREFS = "admin_access"
@@ -37,6 +40,8 @@ private const val ADMIN_PIN_KDF = "pin_kdf"
 private const val LEGACY_ADMIN_PIN_HASH = "pin_sha256"
 private const val FAILED_ATTEMPTS = "failed_pin_attempts"
 private const val LOCKED_UNTIL = "pin_locked_until"
+private const val MIN_ADMIN_PIN_DIGITS = 8
+private const val MAX_ADMIN_PIN_DIGITS = 12
 private const val MAX_FAILED_ATTEMPTS = 5
 private const val LOCK_DURATION_MILLIS = 60_000L
 
@@ -51,22 +56,31 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
     val isSetup = preferences.getString(ADMIN_PIN_HASH, null) == null &&
         preferences.getString(LEGACY_ADMIN_PIN_HASH, null) == null
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Acceso del Jefe") }) }) { insets ->
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text("Acceso del jefe") },
+            navigationIcon = {
+                IconButton(onClick = onVolver, modifier = Modifier.semantics { contentDescription = "Regresar" }) {
+                    Text("←", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        )
+    }) { insets ->
         Column(
             modifier = Modifier.fillMaxSize().padding(insets).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                if (isSetup) "Configura el PIN privado del jefe antes de entregar esta instalación a los trabajadores."
-                else "Ingresa el PIN privado del jefe para abrir administración.",
+                if (isSetup) "Crea un PIN privado para el jefe."
+                else "Ingresa el PIN privado del jefe.",
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
                 value = pin,
-                onValueChange = { pin = it.filter(Char::isDigit).take(12); error = null },
-                label = { Text(if (isSetup) "Nuevo PIN (mínimo 6 dígitos)" else "PIN del jefe") },
+                onValueChange = { pin = it.filter(Char::isDigit).take(MAX_ADMIN_PIN_DIGITS); error = null },
+                label = { Text(if (isSetup) "Nuevo PIN (8–12 dígitos)" else "PIN del jefe") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
@@ -76,7 +90,7 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = confirmation,
-                    onValueChange = { confirmation = it.filter(Char::isDigit).take(12); error = null },
+                    onValueChange = { confirmation = it.filter(Char::isDigit).take(MAX_ADMIN_PIN_DIGITS); error = null },
                     label = { Text("Confirmar PIN") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -91,7 +105,7 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                 onClick = {
                     if (isSetup) {
                         when {
-                            pin.length < 6 -> error = "El PIN debe tener al menos 6 dígitos."
+                            pin.length < MIN_ADMIN_PIN_DIGITS -> error = "El PIN debe tener al menos $MIN_ADMIN_PIN_DIGITS dígitos."
                             pin != confirmation -> error = "Los PIN no coinciden."
                             else -> {
                                 val credential = AdminPinHasher.create(pin)
@@ -154,12 +168,10 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
             ) { Text(if (isSetup) "Crear acceso del jefe" else "Ingresar") }
             Spacer(Modifier.height(8.dp))
             Text(
-                "Este acceso protege solo este teléfono. El PIN no crea cuentas de trabajadores ni reemplaza autenticación de servidor.",
+                "PIN local de este teléfono; no es una cuenta compartida ni acceso a servidor.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = onVolver, modifier = Modifier.fillMaxWidth()) { Text("Volver") }
         }
     }
 }

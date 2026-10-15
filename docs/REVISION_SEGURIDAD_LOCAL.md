@@ -7,7 +7,7 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 | Severidad | Hallazgo | Estado / acción |
 |---|---|---|
 | Alta para exposición pública | `POST /v1/interpret` no autentica clientes ni limita uso; una URL pública podría consumir la cuota Gemini del titular. | Pendiente. No usar el endpoint Render con trabajadores ni publicarlo como servicio de producción antes de definir identidad, cuotas/rate limit y protección antiabuso del lado servidor. |
-| Media | El PIN del jefe era SHA-256 directo sin sal y sin límite de intentos, guardado por instalación. | Corregido en el cliente local: PBKDF2 (HMAC-SHA256 cuando el dispositivo lo soporta, HMAC-SHA1 como compatibilidad para API 24–25) con sal aleatoria por PIN, comparación constante, migración transparente del hash anterior luego de un login válido y espera de 60 s después de cinco fallos. |
+| Media | El PIN del jefe era SHA-256 directo sin sal y sin límite de intentos, guardado por instalación. | Corregido en el cliente local: PBKDF2 (HMAC-SHA256 cuando el dispositivo lo soporta, HMAC-SHA1 como compatibilidad para API 24–25) con sal aleatoria por PIN, comparación constante, migración transparente del hash anterior luego de un login válido y espera de 60 s después de cinco fallos. Los PIN nuevos se crean con 8–12 dígitos; no se exige mezclar caracteres porque es un PIN numérico local. |
 | Media | Android permitía respaldo automático de los datos privados de la app. | Corregido con `android:allowBackup="false"`; validar el comportamiento en las versiones/dispositivos objetivo. |
 | Media para operación | PIN local no es una identidad de trabajador ni control de acceso multiusuario. | Sigue pendiente. La base Room permanece separada en cada teléfono; se requiere autenticación/autorización de servidor para roles y datos compartidos. |
 | Media | Solicitud libre de cotización puede contener información personal que sería enviada a Gemini. | Pendiente de control técnico de minimización/consentimiento. Instruir no incluir nombre, teléfono, dirección u otros identificadores; la revisión de código no puede garantizar detección de todos los datos personales. |
@@ -24,16 +24,23 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 - Los PIN nuevos usan 210 000 iteraciones PBKDF2 y sal aleatoria de 128 bits; usa HMAC-SHA256 cuando está disponible y HMAC-SHA1 en Android API 24–25 para mantener el `minSdk` actual. Se conserva el identificador del KDF para poder verificar el PIN tras una actualización de Android; la comparación usa `MessageDigest.isEqual`.
 - La clave heredada SHA-256 se valida solo para permitir la migración al nuevo formato después de un acceso correcto; luego se elimina.
 - Tras cinco intentos incorrectos, el acceso queda bloqueado un minuto. Es una defensa local de demostración; un atacante con control del dispositivo/almacenamiento puede eludir controles cliente.
+- La política de PIN de esta app fija 8–12 dígitos al crear el acceso. ISO/IEC 27001 no prescribe un conjunto de caracteres universal; el control A.5.17 exige gestionar la información de autenticación mediante un proceso. Esta regla local es una decisión de producto y no evidencia conformidad/certificación. Los PIN existentes se conservan para evitar bloquear instalaciones; no se fuerza su cambio automático.
+- Un PIN de 8 dígitos protege este prototipo local, pero no sustituye cuentas individuales, autenticación en backend ni MFA para administración multiusuario.
 - La función no protege cotizaciones frente a extracción de un teléfono comprometido, root o ingeniería inversa y no sustituye login empresarial.
 
 ## Verificaciones que faltan antes de distribución
 
 1. Instalar la app en dispositivos objetivo y verificar migración de credenciales, bloqueo temporal y política de backup/restauración.
-2. Pruebas locales ejecutadas el 2026-10-15: Android `test`, `lintDebug`, `assembleDebug`; backend 5 pruebas unitarias. Repetirlas en CI y dispositivos objetivo.
-3. Qodana CI pasó el 2026-10-15. La ejecución local de Android `test lintDebug assembleDebug` no produjo salida en este equipo y fue interrumpida; el próximo workflow debe confirmar el fix del permiso de `gradlew`. CodeQL también debe confirmarse en la siguiente ejecución después de separar Python de Java/Kotlin.
+2. Verificación local de Android el 2026-10-15: `testDebugUnitTest`, `lintDebug` y `assembleDebug` completaron correctamente. 21 pruebas unitarias pasaron; lint informó 0 errores y 2 avisos (`targetSdk` 35 y Room con Kapt). APK Debug 1.3.0 generado. Esta compilación no prueba comportamiento visual en teléfonos ni firma de distribución.
+3. Qodana CI pasó el 2026-10-15 para la revisión anterior. Esta ejecución local no repite Qodana, CodeQL ni el backend; confirmar los análisis en CI al publicar los cambios.
 4. Ejecutar escaneo de secretos e inventario actualizado de dependencias Android; revisar falsos positivos y remediar hallazgos aplicables.
 5. Ejecutar SonarQube con host/token, guardar versión de servidor, fecha y Quality Gate.
 6. Revisión de seguridad del backend público: autenticación, autorización, rate limit, cuota, CORS si aplica, tamaño de solicitud, timeout, errores y retención.
 7. Pentest/DAST autorizado del artefacto de producción y configuración real antes de guardar datos reales o distribuir a trabajadores.
 
 No se deben subir `.env`, API keys, PINes, datos de clientes ni registros locales a GitHub. Si una clave ya fue expuesta en chat/captura o commit, revocarla y crear una nueva; no basta con borrar el texto del repositorio.
+
+## Referencias de autenticación
+
+- ISO/IEC 27001:2022 define un sistema de gestión de seguridad y su control A.5.17 se centra en administrar información de autenticación; no establece una combinación fija de mayúsculas, números y símbolos para todos los sistemas: https://www.iso.org/standard/27001
+- NIST SP 800-63B (Digital Identity Guidelines) desaconseja reglas de composición para contraseñas verificadas centralmente y define longitud según el contexto de autenticación. No debe aplicarse mecánicamente a este PIN de desbloqueo local: https://pages.nist.gov/800-63-4/sp800-63b.html
