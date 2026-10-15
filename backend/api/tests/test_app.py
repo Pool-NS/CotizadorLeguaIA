@@ -63,13 +63,13 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
         FakeAsyncClient.last_headers = None
 
     async def test_rejects_when_provider_key_is_missing(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": ""}, clear=False):
             with self.assertRaises(HTTPException) as raised:
                 await app.interpret(app.InterpretationRequest(requirement="Carpa 3 por 2"))
         self.assertEqual(503, raised.exception.status_code)
 
     async def test_returns_structured_suggestion_using_gemini_json(self) -> None:
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-secret"}, clear=True):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-secret"}, clear=False):
             with patch("app.httpx.AsyncClient", FakeAsyncClient):
                 result = await app.interpret(app.InterpretationRequest(requirement="Carpa cerrada 3 por 2"))
 
@@ -87,7 +87,7 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("key=", FakeAsyncClient.last_url)
 
     async def test_uses_gemini_model_configured_in_environment(self) -> None:
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-secret", "GEMINI_MODEL": "gemini-test"}, clear=True):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-secret", "GEMINI_MODEL": "gemini-test"}, clear=False):
             with patch("app.httpx.AsyncClient", FakeAsyncClient):
                 result = await app.interpret(app.InterpretationRequest(requirement="Carpa 3 por 2"))
 

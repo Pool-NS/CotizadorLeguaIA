@@ -1,7 +1,6 @@
 package com.leguia.cotizadoria.screens
 
 import android.content.Context
-import android.util.Base64
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,10 +28,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import java.security.MessageDigest
+import com.leguia.cotizadoria.security.AdminPinHasher
 
 private const val ADMIN_PREFS = "admin_access"
-private const val ADMIN_PIN_HASH = "pin_sha256"
+private const val ADMIN_PIN_HASH = "pin_pbkdf2_hash"
+private const val ADMIN_PIN_SALT = "pin_salt"
+private const val ADMIN_PIN_KDF = "pin_kdf"
+private const val LEGACY_ADMIN_PIN_HASH = "pin_sha256"
+private const val FAILED_ATTEMPTS = "failed_pin_attempts"
+private const val LOCKED_UNTIL = "pin_locked_until"
+private const val MAX_FAILED_ATTEMPTS = 5
+private const val LOCK_DURATION_MILLIS = 60_000L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +48,8 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
     var pin by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    val isSetup = preferences.getString(ADMIN_PIN_HASH, null) == null
+    val isSetup = preferences.getString(ADMIN_PIN_HASH, null) == null &&
+        preferences.getString(LEGACY_ADMIN_PIN_HASH, null) == null
 
     Scaffold(topBar = { TopAppBar(title = { Text("Acceso del Jefe") }) }) { insets ->
         Column(
@@ -87,18 +94,67 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                             pin.length < 6 -> error = "El PIN debe tener al menos 6 dígitos."
                             pin != confirmation -> error = "Los PIN no coinciden."
                             else -> {
-                                preferences.edit().putString(ADMIN_PIN_HASH, hashPin(pin)).apply()
+                                val credential = AdminPinHasher.create(pin)
+                                preferences.edit()
+                                    .putString(ADMIN_PIN_SALT, credential.salt)
+                                    .putString(ADMIN_PIN_HASH, credential.hash)
+                                    .putString(ADMIN_PIN_KDF, credential.algorithm)
+                                    .remove(FAILED_ATTEMPTS)
+                                    .remove(LOCKED_UNTIL)
+                                    .apply()
                                 onAccesoConcedido()
                             }
                         }
-                    } else if (constantTimeEquals(preferences.getString(ADMIN_PIN_HASH, "").orEmpty(), hashPin(pin))) {
-                        onAccesoConcedido()
-                    } else error = "PIN incorrecto."
+                    } else {
+                        val now = System.currentTimeMillis()
+                        val lockedUntil = preferences.getLong(LOCKED_UNTIL, 0L)
+                        if (lockedUntil > now) {
+                            val remainingSeconds = ((lockedUntil - now + 999L) / 1000L).coerceAtLeast(1L)
+                            error = "Demasiados intentos. Vuelve a probar en $remainingSeconds s."
+                        } else {
+                            val modernHash = preferences.getString(ADMIN_PIN_HASH, null)
+                            val modernSalt = preferences.getString(ADMIN_PIN_SALT, null)
+                            val modernAlgorithm = preferences.getString(ADMIN_PIN_KDF, null)
+                            val legacyHash = preferences.getString(LEGACY_ADMIN_PIN_HASH, null)
+                            val valid = if (modernHash != null && modernSalt != null && modernAlgorithm != null) {
+                                AdminPinHasher.verify(pin, modernSalt, modernHash, modernAlgorithm)
+                            } else {
+                                legacyHash?.let { AdminPinHasher.verifyLegacySha256(pin, it) } == true
+                            }
+                            if (valid) {
+                                val editor = preferences.edit()
+                                    .remove(FAILED_ATTEMPTS)
+                                    .remove(LOCKED_UNTIL)
+                                if (modernHash == null || modernSalt == null || modernAlgorithm == null) {
+                                    val upgraded = AdminPinHasher.create(pin)
+                                    editor.putString(ADMIN_PIN_SALT, upgraded.salt)
+                                        .putString(ADMIN_PIN_HASH, upgraded.hash)
+                                        .putString(ADMIN_PIN_KDF, upgraded.algorithm)
+                                        .remove(LEGACY_ADMIN_PIN_HASH)
+                                }
+                                editor.apply()
+                                onAccesoConcedido()
+                            } else {
+                                val previousAttempts = if (lockedUntil > 0L) 0 else preferences.getInt(FAILED_ATTEMPTS, 0)
+                                val attempts = previousAttempts + 1
+                                if (attempts >= MAX_FAILED_ATTEMPTS) {
+                                    preferences.edit()
+                                        .putInt(FAILED_ATTEMPTS, 0)
+                                        .putLong(LOCKED_UNTIL, now + LOCK_DURATION_MILLIS)
+                                        .apply()
+                                    error = "Demasiados intentos. Vuelve a probar en 60 s."
+                                } else {
+                                    preferences.edit().putInt(FAILED_ATTEMPTS, attempts).remove(LOCKED_UNTIL).apply()
+                                    error = "PIN incorrecto. Intento $attempts de $MAX_FAILED_ATTEMPTS."
+                                }
+                            }
+                        }
+                    }
                 }
             ) { Text(if (isSetup) "Crear acceso del jefe" else "Ingresar") }
             Spacer(Modifier.height(8.dp))
             Text(
-                "El PIN se guarda en este teléfono. Configúralo el jefe antes de compartir cada instalación; sin cuentas o servidor, no se sincroniza entre teléfonos.",
+                "Este acceso protege solo este teléfono. El PIN no crea cuentas de trabajadores ni reemplaza autenticación de servidor.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -107,11 +163,3 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
         }
     }
 }
-
-private fun hashPin(pin: String): String = Base64.encodeToString(
-    MessageDigest.getInstance("SHA-256").digest(pin.toByteArray(Charsets.UTF_8)),
-    Base64.NO_WRAP
-)
-
-private fun constantTimeEquals(expected: String, actual: String): Boolean =
-    MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8), actual.toByteArray(Charsets.UTF_8))

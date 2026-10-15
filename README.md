@@ -4,9 +4,9 @@ Aplicación Android en Kotlin/Compose con persistencia local Room. El repositori
 
 ## Estado actual
 
-La app incluye cotización local, tarifas, inventario, seguimiento, captura de voz y revisión humana de campos. El módulo de IA generativa usa un backend FastAPI que consulta Gemini y requiere una clave configurada fuera del repositorio; no se entrega una clave ni backend público. La gratuidad de Gemini depende de la cuenta, del modelo y de límites sujetos a cambio. Consulta [docs/AI.md](docs/AI.md), [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK Debug: `app/build/outputs/apk/debug/app-debug.apk`.
+La app incluye cotización local, tarifas, inventario, seguimiento, captura de voz y revisión humana de campos. El módulo de IA generativa usa un backend FastAPI que consulta Gemini y requiere una clave configurada fuera del repositorio; no se entrega una clave ni backend público. La gratuidad de Gemini depende de la cuenta, del modelo y de límites sujetos a cambio. Consulta [docs/AI.md](docs/AI.md), [docs/CURRENT_AUDIT.md](docs/CURRENT_AUDIT.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) y el [enfoque metodológico de IA, DevSecOps y métricas](docs/METODOLOGIA_IA_DEVSECOPS.md). Guion: [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md). APK Debug: `app/build/outputs/apk/debug/app-debug.apk`.
 
-La versión Android de este avance es `1.1.0` (version code `2`). La app muestra su identidad y versión en la pantalla de inicio y usa un ícono vectorial propio de Leguía.
+La versión Android de este avance es `1.1.0` (version code `2`). La app muestra su identidad y versión en la pantalla de inicio y usa un ícono vectorial propio de Leguía. Las métricas y visualizaciones recomendadas con base en la operacionalización disponible están en [docs/METRICAS_APP_TESIS.md](docs/METRICAS_APP_TESIS.md); la revisión estática limitada de seguridad está en [docs/REVISION_SEGURIDAD_LOCAL.md](docs/REVISION_SEGURIDAD_LOCAL.md).
 
 ## Requisitos y ejecución
 

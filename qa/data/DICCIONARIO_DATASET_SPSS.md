@@ -16,7 +16,7 @@ En SPSS, abre `Importar_dataset_SPSS.sps` y ejecútalo. Si el repositorio está 
 | `quote_amount` | Numérica | Importe simulado; el dataset no especifica moneda ni tarifa real. |
 | `discount_percentage` | Numérica | Descuento porcentual simulado. |
 | `requirement_complete` | Binaria (0/1) | Indica si el requerimiento se marcó como completo. |
-| `ai_interpretation_reviewed` | Binaria (0/1) | Indicador simulado de revisión de interpretación; no significa que la app tenga IA integrada. |
+| `ai_interpretation_reviewed` | Binaria (0/1) | Indicador simulado para practicar análisis; no prueba que Gemini interpretó esa solicitud ni que la revisión ocurrió en producción. |
 | `quotation_time_minutes` | Numérica | Tiempo simulado para preparar una cotización, en minutos. |
 | `days_to_requested_date` | Numérica | Días entre la cotización y la fecha solicitada. |
 | `customer_response_days` | Numérica | Días simulados hasta la respuesta del cliente. |
