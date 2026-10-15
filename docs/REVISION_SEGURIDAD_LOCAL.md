@@ -13,7 +13,7 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 | Media | Solicitud libre de cotización puede contener información personal que sería enviada a Gemini. | Pendiente de control técnico de minimización/consentimiento. Instruir no incluir nombre, teléfono, dirección u otros identificadores; la revisión de código no puede garantizar detección de todos los datos personales. |
 | Baja/entorno | Android Debug permite HTTP para conexión a localhost/LAN; Release debe usar HTTPS. | Solo desarrollo. No distribuir APK Debug ni configurar URL Release en HTTP. |
 | Pendiente | SonarQube está configurado, pero no se ejecutó contra instancia/credenciales disponibles. | No hay Quality Gate ni hallazgos de Sonar que reportar. |
-| Configurado; primera ejecución pendiente | Qodana Community for Android con perfil recomendado en Android Studio y GitHub Actions. | El workflow guarda `qodana-report` como artefacto. No se afirma que pasó hasta revisar ese reporte; Qodana Cloud requiere `QODANA_TOKEN`. |
+| Ejecución local bloqueada; CI configurado | Qodana CLI 2026.2.2 está instalada, pero `qodana-jvm-android` no admite el modo nativo y este equipo no tiene Docker. GitHub Actions usa el modo contenedor. | La primera ejecución de CI y revisión del artefacto `qodana-report` siguen pendientes; Qodana Cloud requiere `QODANA_TOKEN`. |
 | Informativo (Python) | `pip-audit` contra las dependencias fijadas en `backend/api/requirements.txt`. | Ejecutado el 2026-10-15: sin vulnerabilidades conocidas en los paquetes auditados; el resultado se conserva en `qa/security/python_dependencies_pip_audit.json`. Esto no cubre dependencias Android, imagen de Render, configuración ni vulnerabilidades desconocidas. |
 
 ## Cambios locales de protección del PIN

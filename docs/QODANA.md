@@ -1,6 +1,6 @@
 # Análisis estático con Qodana
 
-El repositorio incluye `qodana.yaml` para usar el perfil recomendado de Qodana Community for Android (`qodana-jvm-android`, versión 2026.2). El workflow `.github/workflows/qodana.yml` analiza `main`, pull requests y ejecuciones manuales; guarda el reporte como artefacto `qodana-report` en la ejecución de GitHub Actions.
+El repositorio incluye `qodana.yaml` para usar el perfil recomendado de Qodana Community for Android (`qodana-jvm-android`, versión 2026.2). El workflow `.github/workflows/qodana.yml` analiza `main`, pull requests y ejecuciones manuales en modo contenedor; guarda el reporte como artefacto `qodana-report` en la ejecución de GitHub Actions. Para ejecutar este linter desde la CLI local se necesita Docker; este equipo no lo tiene instalado.
 
 ## Ejecutar desde Android Studio
 
