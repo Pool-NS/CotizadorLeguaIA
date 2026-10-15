@@ -13,7 +13,10 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 | Media | Solicitud libre de cotización puede contener información personal que sería enviada a Gemini. | Pendiente de control técnico de minimización/consentimiento. Instruir no incluir nombre, teléfono, dirección u otros identificadores; la revisión de código no puede garantizar detección de todos los datos personales. |
 | Baja/entorno | Android Debug permite HTTP para conexión a localhost/LAN; Release debe usar HTTPS. | Solo desarrollo. No distribuir APK Debug ni configurar URL Release en HTTP. |
 | Pendiente | SonarQube está configurado, pero no se ejecutó contra instancia/credenciales disponibles. | No hay Quality Gate ni hallazgos de Sonar que reportar. |
-| Ejecución local bloqueada; CI configurado | Qodana CLI 2026.2.2 está instalada, pero `qodana-jvm-android` no admite el modo nativo y este equipo no tiene Docker. GitHub Actions usa el modo contenedor. | La primera ejecución de CI y revisión del artefacto `qodana-report` siguen pendientes; Qodana Cloud requiere `QODANA_TOKEN`. |
+| Informativo | Qodana Community for Android se ejecuta en contenedor en GitHub Actions. | Ejecución #4 del 2026-10-15 para `c6de50d`: completada correctamente. Revisar el artefacto `qodana-report` para valorar los hallazgos; esto no es certificación ni Quality Gate de SonarQube. |
+| Pendiente de corregir en CI | GitHub Actions falla al invocar `./gradlew` porque el bit ejecutable no estaba versionado en Git. | Corregido en esta revisión al marcar `gradlew` como ejecutable; validar en la siguiente ejecución de CI. |
+| Configuración del repositorio | El envío del grafo de dependencias Gradle falla porque Dependency graph está desactivado en GitHub. | Se retiró ese paso del workflow para no fallar por una opción externa del repositorio. Si se desea el grafo en GitHub, habilitarlo en Settings → Code security and analysis y volver a añadir el envío. Dependabot continúa configurado aparte. |
+| Configuración de CodeQL | CodeQL rechazó `build-mode: manual` al incluir Python, cuyo modo admitido es `none`. | Se separó el análisis en una matriz: Java/Kotlin con compilación manual y Python con modo `none`; validar en la siguiente ejecución de CI. |
 | Informativo (Python) | `pip-audit` contra las dependencias fijadas en `backend/api/requirements.txt`. | Ejecutado el 2026-10-15: sin vulnerabilidades conocidas en los paquetes auditados; el resultado se conserva en `qa/security/python_dependencies_pip_audit.json`. Esto no cubre dependencias Android, imagen de Render, configuración ni vulnerabilidades desconocidas. |
 
 ## Cambios locales de protección del PIN
@@ -27,9 +30,10 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 
 1. Instalar la app en dispositivos objetivo y verificar migración de credenciales, bloqueo temporal y política de backup/restauración.
 2. Pruebas locales ejecutadas el 2026-10-15: Android `test`, `lintDebug`, `assembleDebug`; backend 5 pruebas unitarias. Repetirlas en CI y dispositivos objetivo.
-3. Pendiente revisar la primera ejecución de Qodana y ejecutar CodeQL/SAST de GitHub, escaneo de secretos e inventario actualizado de dependencias Android; revisar falsos positivos y remediar hallazgos aplicables.
-4. Ejecutar SonarQube con host/token, guardar versión de servidor, fecha y Quality Gate.
-5. Revisión de seguridad del backend público: autenticación, autorización, rate limit, cuota, CORS si aplica, tamaño de solicitud, timeout, errores y retención.
-6. Pentest/DAST autorizado del artefacto de producción y configuración real antes de guardar datos reales o distribuir a trabajadores.
+3. Qodana CI pasó el 2026-10-15. La ejecución local de Android `test lintDebug assembleDebug` no produjo salida en este equipo y fue interrumpida; el próximo workflow debe confirmar el fix del permiso de `gradlew`. CodeQL también debe confirmarse en la siguiente ejecución después de separar Python de Java/Kotlin.
+4. Ejecutar escaneo de secretos e inventario actualizado de dependencias Android; revisar falsos positivos y remediar hallazgos aplicables.
+5. Ejecutar SonarQube con host/token, guardar versión de servidor, fecha y Quality Gate.
+6. Revisión de seguridad del backend público: autenticación, autorización, rate limit, cuota, CORS si aplica, tamaño de solicitud, timeout, errores y retención.
+7. Pentest/DAST autorizado del artefacto de producción y configuración real antes de guardar datos reales o distribuir a trabajadores.
 
 No se deben subir `.env`, API keys, PINes, datos de clientes ni registros locales a GitHub. Si una clave ya fue expuesta en chat/captura o commit, revocarla y crear una nueva; no basta con borrar el texto del repositorio.

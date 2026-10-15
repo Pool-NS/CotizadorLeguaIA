@@ -45,8 +45,16 @@ jobs:
         run: python -m unittest discover -s tests -v
 
   codeql:
-    name: CodeQL source analysis
+    name: CodeQL source analysis (${{ matrix.language }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: python
+            build-mode: none
     permissions:
       actions: read
       contents: read
@@ -59,23 +67,11 @@ jobs:
           java-version: '17'
       - uses: github/codeql-action/init@v4
         with:
-          languages: java-kotlin, python
-          build-mode: manual
-      - uses: gradle/actions/setup-gradle@v6
-      - name: Build Android code for analysis
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@v6
+      - if: matrix.language == 'java-kotlin'
+        name: Build Android code for analysis
         run: ./gradlew assembleDebug
       - uses: github/codeql-action/analyze@v4
-
-  gradle-dependency-graph:
-    name: Submit Android dependency graph
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/dependency-submission@v6
