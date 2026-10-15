@@ -32,4 +32,4 @@ La captura por voz usa el reconocedor de Android. El texto puede enviarse al bac
 
 ## Calidad y seguridad
 
-Use [docs/TESTING.md](docs/TESTING.md), [docs/QUALITY.md](docs/QUALITY.md) y `qa/`. Las evaluaciones normativas son marcos de evaluación y gestión; no implican certificación ni aprobación.
+Use [docs/TESTING.md](docs/TESTING.md), [docs/QUALITY.md](docs/QUALITY.md), [docs/QODANA.md](docs/QODANA.md) y `qa/`. Las evaluaciones normativas son marcos de evaluación y gestión; no implican certificación ni aprobación.

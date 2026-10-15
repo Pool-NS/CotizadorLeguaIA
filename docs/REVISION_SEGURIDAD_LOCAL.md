@@ -13,6 +13,7 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 | Media | Solicitud libre de cotización puede contener información personal que sería enviada a Gemini. | Pendiente de control técnico de minimización/consentimiento. Instruir no incluir nombre, teléfono, dirección u otros identificadores; la revisión de código no puede garantizar detección de todos los datos personales. |
 | Baja/entorno | Android Debug permite HTTP para conexión a localhost/LAN; Release debe usar HTTPS. | Solo desarrollo. No distribuir APK Debug ni configurar URL Release en HTTP. |
 | Pendiente | SonarQube está configurado, pero no se ejecutó contra instancia/credenciales disponibles. | No hay Quality Gate ni hallazgos de Sonar que reportar. |
+| Configurado; primera ejecución pendiente | Qodana Community for Android con perfil recomendado en Android Studio y GitHub Actions. | El workflow guarda `qodana-report` como artefacto. No se afirma que pasó hasta revisar ese reporte; Qodana Cloud requiere `QODANA_TOKEN`. |
 | Informativo (Python) | `pip-audit` contra las dependencias fijadas en `backend/api/requirements.txt`. | Ejecutado el 2026-10-15: sin vulnerabilidades conocidas en los paquetes auditados; el resultado se conserva en `qa/security/python_dependencies_pip_audit.json`. Esto no cubre dependencias Android, imagen de Render, configuración ni vulnerabilidades desconocidas. |
 
 ## Cambios locales de protección del PIN
@@ -26,7 +27,7 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 
 1. Instalar la app en dispositivos objetivo y verificar migración de credenciales, bloqueo temporal y política de backup/restauración.
 2. Pruebas locales ejecutadas el 2026-10-15: Android `test`, `lintDebug`, `assembleDebug`; backend 5 pruebas unitarias. Repetirlas en CI y dispositivos objetivo.
-3. Pendiente ejecutar CodeQL/SAST de GitHub, escaneo de secretos e inventario actualizado de dependencias Android; revisar falsos positivos y remediar hallazgos aplicables.
+3. Pendiente revisar la primera ejecución de Qodana y ejecutar CodeQL/SAST de GitHub, escaneo de secretos e inventario actualizado de dependencias Android; revisar falsos positivos y remediar hallazgos aplicables.
 4. Ejecutar SonarQube con host/token, guardar versión de servidor, fecha y Quality Gate.
 5. Revisión de seguridad del backend público: autenticación, autorización, rate limit, cuota, CORS si aplica, tamaño de solicitud, timeout, errores y retención.
 6. Pentest/DAST autorizado del artefacto de producción y configuración real antes de guardar datos reales o distribuir a trabajadores.
