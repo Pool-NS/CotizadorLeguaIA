@@ -8,6 +8,8 @@ La app incluye cotización local, tarifas, inventario, seguimiento, captura de v
 
 La versión Android de este avance es `1.1.0` (version code `2`). La app muestra su identidad y versión en la pantalla de inicio y usa un ícono vectorial propio de Leguía. Las métricas y visualizaciones recomendadas con base en la operacionalización disponible están en [docs/METRICAS_APP_TESIS.md](docs/METRICAS_APP_TESIS.md); la revisión estática limitada de seguridad está en [docs/REVISION_SEGURIDAD_LOCAL.md](docs/REVISION_SEGURIDAD_LOCAL.md).
 
+El alcance específico de la app, su diferencia frente a un ERP general como Odoo y los criterios pendientes antes de declararla lista para operación están en [docs/DIFERENCIACION_ODOO_Y_ALCANCE.md](docs/DIFERENCIACION_ODOO_Y_ALCANCE.md). La app complementa un ERP en el flujo especializado de cotización; no pretende sustituirlo.
+
 ## Requisitos y ejecución
 
 Android Studio compatible con AGP 8.7.2, JDK 17 y Android SDK 35. Abre el directorio raíz en Android Studio. El backend se ejecuta aparte; instrucciones en `backend/api/README.md`. La última ejecución de test/lint anterior al módulo IA se documenta en `qa/FINAL_QUALITY_REPORT.md`; falta volver a validar este cambio y probarlo en dispositivo. SonarQube está configurado, pero el análisis y Quality Gate requieren una instancia y credenciales.
