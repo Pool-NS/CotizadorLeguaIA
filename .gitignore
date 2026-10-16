@@ -23,6 +23,10 @@ secrets.properties
 .env
 .env.*
 !**/.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
 
 google-services.json
 

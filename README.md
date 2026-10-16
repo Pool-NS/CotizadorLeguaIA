@@ -37,3 +37,5 @@ La captura por voz usa el reconocedor de Android. El texto puede enviarse al bac
 Use [docs/TESTING.md](docs/TESTING.md), [docs/QUALITY.md](docs/QUALITY.md), [docs/QODANA.md](docs/QODANA.md) y `qa/`. Las evaluaciones normativas son marcos de evaluación y gestión; no implican certificación ni aprobación.
 
 La actualización de navegación, dashboard, gráficos y política local de contraseña está descrita en [docs/MEJORAS_UX_DASHBOARD.md](docs/MEJORAS_UX_DASHBOARD.md). La referencia de credenciales se documenta también en [docs/REVISION_SEGURIDAD_LOCAL.md](docs/REVISION_SEGURIDAD_LOCAL.md). La combinación de caracteres es política interna del proyecto; no se atribuye como mandato textual de ISO/IEC 27001.
+
+Para preparar la evaluación de calidad automatizada de Quantum/GitLab, revisa [docs/GITLAB_QUANTUM_EVALUACION.md](docs/GITLAB_QUANTUM_EVALUACION.md); `project.yml` requiere completar los datos académicos reales antes de ejecutar el pipeline.

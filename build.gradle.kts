@@ -19,7 +19,7 @@ sonar {
         property("sonar.java.binaries", "app/build/tmp/kotlin-classes/debug")
         property(
             "sonar.coverage.jacoco.xmlReportPaths",
-            "app/build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml"
+            "qa/coverage/jacoco.xml"
         )
     }
 }

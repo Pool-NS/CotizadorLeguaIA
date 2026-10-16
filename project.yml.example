@@ -1,0 +1,22 @@
+project:
+  name: "Cotizador Leguía"
+  version: "1.4.1"
+  description: "Aplicación Android para estructurar solicitudes de cotización y consultar tarifas e inventario local."
+
+stack:
+  detect: true
+
+academic:
+  course: "Taller de Investigación II"
+  evaluation_name: "Evaluación de Calidad"
+  partial_weight_percentage: 100
+
+evaluator:
+  name: "Nombre completo del docente"
+  email: "correo.institucional@universidad.edu"
+  role: "Docente Evaluador"
+
+members:
+  - name: "Nombre completo del integrante"
+    code: "Código universitario"
+    email: "correo.institucional@universidad.edu"

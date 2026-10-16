@@ -15,6 +15,29 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("kotlin-kapt")
+    id("jacoco")
+}
+
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+tasks.register<JacocoReport>("testDebugUnitTestCoverage") {
+    dependsOn("testDebugUnitTest")
+    executionData.setFrom(fileTree(layout.buildDirectory) {
+        include("jacoco/testDebugUnitTest.exec")
+    })
+    sourceDirectories.setFrom(files("$projectDir/src/main/java"))
+    classDirectories.setFrom(fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+        exclude("**/R.class", "**/R$*.class", "**/BuildConfig.class", "**/Manifest.class")
+    })
+    reports {
+        xml.required.set(true)
+        xml.outputLocation.set(rootProject.layout.projectDirectory.file("qa/coverage/jacoco.xml"))
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/testDebugUnitTestCoverage/html"))
+        csv.required.set(false)
+    }
 }
 
 android {
