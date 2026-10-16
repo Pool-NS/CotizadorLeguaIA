@@ -62,6 +62,11 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
         FakeAsyncClient.last_url = None
         FakeAsyncClient.last_headers = None
 
+    async def test_root_exposes_diagnostic_routes(self) -> None:
+        result = await app.root()
+        self.assertEqual("/health", result["health"])
+        self.assertEqual("POST /v1/interpret", result["interpretation"])
+
     async def test_rejects_when_provider_key_is_missing(self) -> None:
         with patch.dict(os.environ, {"GEMINI_API_KEY": ""}, clear=False):
             with self.assertRaises(HTTPException) as raised:

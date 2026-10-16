@@ -25,14 +25,15 @@ android {
         applicationId = "com.leguia.cotizadoria"
         minSdk = 24
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.4.0"
+        versionCode = 7
+        versionName = "1.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         debug {
+            // Local emulator by default; override in ignored local.properties for a phone/ngrok tunnel.
             buildConfigField("String", "AI_BACKEND_URL", "\"${debugAiBackendUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
         }
         release {

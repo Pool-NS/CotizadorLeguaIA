@@ -21,6 +21,7 @@ class BackendGenerativeAiClient(private val baseUrl: String) : GenerativeAiClien
                     connection.readTimeout = 30_000
                     connection.doOutput = true
                     connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    connection.setRequestProperty("ngrok-skip-browser-warning", "true")
                     connection.outputStream.use { output ->
                         output.write(JSONObject().put("requirement", requirement).toString().toByteArray(Charsets.UTF_8))
                     }

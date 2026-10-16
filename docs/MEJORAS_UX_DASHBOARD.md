@@ -45,6 +45,8 @@ La primera vez que una contraseña previa no cumpla la nueva política, debe ver
 
 La interfaz se diseñó con criterios de usabilidad y la seguridad se documenta tomando ISO/IEC 27001:2022 A.5.17 como referencia. Esto no supone conformidad, auditoría ni certificación ISO, ni una aprobación de Qodana/SonarQube. Estado de análisis estático y pendientes: [revisión local de seguridad](REVISION_SEGURIDAD_LOCAL.md) y [calidad](QUALITY.md).
 
+La configuración Debug del backend usa `aiBackendUrl` en `local.properties` y por defecto apunta al emulador Android (`http://10.0.2.2:8000`). Para ngrok se debe copiar la URL HTTPS activa de la terminal de ngrok y reconstruir/reinstalar Debug; no se debe fijar una URL efímera del túnel en Git. `GET /` y `GET /health` son diagnósticos; la interpretación requiere `POST /v1/interpret`. El agente ngrok y Uvicorn deben permanecer ejecutándose.
+
 ## Verificación de esta versión
 
 La versión 1.4.0 incorpora el carrusel de medidas, selección táctil de materiales y búsqueda/resumen del stock local. La generación de la APK y la verificación en dispositivo siguen pendientes para esta revisión.

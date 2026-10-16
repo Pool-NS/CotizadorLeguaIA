@@ -107,7 +107,7 @@ No uses `git init`, no cambies `origin` y no subas `.env`, `.venv`, `local.prope
    | `GEMINI_MODEL` | `gemini-3.5-flash-lite` |
 
 6. En el panel del servicio abre **Environment** para añadir o actualizar variables. Guarda el cambio y realiza un redeploy si Render lo solicita. Render inyecta las variables en el proceso: no copies `.env` al repositorio ni uses `--env-file .env` en el comando de producción.
-7. En **Events/Logs**, verifica que el deploy termine correctamente. Abre `https://<nombre-del-servicio>.onrender.com/health`. Debe devolver JSON con `ok: true` y `ai_configured: true`. La ruta `/` no está definida y puede responder 404; eso no significa que el servicio esté caído.
+7. En **Events/Logs**, verifica que el deploy termine correctamente. Abre `https://<nombre-del-servicio>.onrender.com/health`. Debe devolver JSON con `ok: true` y `ai_configured: true`. `GET /` muestra información del servicio; la interpretación de IA requiere `POST /v1/interpret`.
 8. Prueba una interpretación con la app. Si `/health` funciona y la IA falla, revisa logs y cuota de Gemini. HTTP 429 indica límite/cuota; 502 indica que el backend no obtuvo una respuesta utilizable del proveedor; 503 indica configuración de clave no disponible/autorizada. El primer pedido tras un período inactivo puede tardar por el arranque en frío del plan Free.
 
 Google puede cambiar modelos, disponibilidad, límites y precios. `GEMINI_MODEL` puede actualizarse desde Environment sin alterar la clave; consulta el catálogo oficial antes de cambiarlo.
@@ -117,7 +117,8 @@ Google puede cambiar modelos, disponibilidad, límites y precios. `GEMINI_MODEL`
 El módulo Android obtiene ambas direcciones desde `local.properties` en la raíz del proyecto. El archivo está ignorado por Git. Conserva `sdk.dir` y agrega o actualiza estas propiedades:
 
 ```properties
-aiBackendUrl=http://192.168.100.3:8000
+aiBackendUrl=https://<URL-HTTPS-ACTUAL-DE-NGROK>
+
 aiBackendUrlRelease=https://<nombre-del-servicio>.onrender.com
 ```
 

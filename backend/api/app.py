@@ -63,6 +63,16 @@ app = FastAPI(title="Cotizador Leguía Gemini API", version="0.4.0")
 logger = logging.getLogger(__name__)
 
 
+@app.get("/")
+async def root() -> dict[str, str]:
+    """Expose a small diagnostic page instead of a confusing root 404."""
+    return {
+        "service": "Cotizador Leguía API",
+        "health": "/health",
+        "interpretation": "POST /v1/interpret",
+    }
+
+
 def _extract_output_text(response_body: dict) -> str:
     candidates = response_body.get("candidates", [])
     for candidate in candidates:
