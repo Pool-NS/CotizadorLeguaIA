@@ -1,42 +1,65 @@
-# Preparación para la evaluación automatizada de Quantum
+# Entrega y evaluacion de calidad en GitLab Quantum
 
-Este documento adapta el manual del estudiante de evaluación automatizada de calidad al repositorio Cotizador Leguía. Seguir el manual no significa que el pipeline o la nota hayan sido aprobados.
+Esta guia aplica el **Manual del estudiante – Evaluacion de Calidad en GitLab** al repositorio Cotizador Leguia. La configuracion local deja el proyecto preparado; la nota y el estado de aprobado solo se conocen despues de ejecutar el pipeline real en GitLab Quantum.
 
-## Archivos y estado
+## Requisitos del manual y estado local
 
-| Requisito del manual | Estado en este repositorio | Acción necesaria |
-|---|---|---|
-| `.gitlab-ci.yml` en la raíz, incluyendo `root/laboratorio-quality` | Preparado | Coincide con el archivo `gitlab-ci.yml` adjunto; validar el primer pipeline en el GitLab asignado. |
-| `project.yml` en la raíz con curso y datos académicos | Preparado con los datos confirmados | Se usó la estructura del `project.yml` adjunto y se reemplazaron los datos de ejemplo por los del Cotizador Leguía y los datos académicos proporcionados. |
-| `.gitignore` excluye dependencias, build y secretos | Preparado | Revisar `git status` antes de cada commit; no subir `.env`, tokens ni claves. |
-| Reporte JaCoCo para Kotlin/Android | Configurado | Ejecutar `gradlew.bat testDebugUnitTestCoverage`; revisar `qa/coverage/jacoco.xml` y registrar el reporte en Git. |
-| Reporte de cobertura Python | Pendiente de habilitar | Agregar `pytest-cov` como dependencia de desarrollo y generar un XML separado si el evaluador analiza el backend Python. |
-| SonarQube/Quality Gate | No verificado en Quantum | Consultar el pipeline y el reporte real. La configuración local de Sonar no demuestra una nota ni un Quality Gate aprobado. |
-| Push al repositorio académico GitLab | Pendiente | Crear el proyecto en Quantum, conectar su URL HTTPS y autenticar Git usando el gestor de credenciales del equipo. |
+| Requisito | Estado |
+| --- | --- |
+| `.gitlab-ci.yml` en la raiz con el include oficial `root/laboratorio-quality` | Configurado |
+| `project.yml` en la raiz con datos del proyecto y evaluacion | Configurado con los datos confirmados por el estudiante |
+| `.gitignore` para entornos, dependencias, compilados y secretos | Configurado; incluye `node_modules/`, `venv/`, `vendor/`, `build/`, `.env` y archivos locales |
+| Crear cuenta y proyecto vacio en GitLab Quantum | Accion del estudiante en la web |
+| Conectar GitLab como remoto adicional y hacer push | Pendiente de la URL HTTPS exacta del proyecto creado |
+| Revisar las etapas `detect`, `quality` y `notify` | Pendiente del primer pipeline real |
 
-## Medición local actual
+## Datos academicos configurados
 
-En la última ejecución local se ejecutaron 22 pruebas unitarias Android: 22 aprobadas y 0 fallidas. JaCoCo midió 214 de 2,091 líneas: 10.23 %. Según la rúbrica del manual, este valor está bajo 30 % y obtiene 0/4 puntos en cobertura. El reporte está en `qa/coverage/jacoco.xml`. Este resultado no representa la nota total ni un resultado de Quantum; conviene priorizar pruebas adicionales de lógica de negocio antes de presentar.
+`project.yml` registra el curso **Taller de Investigacion II**, la evaluacion con ponderacion de **100 %**, al docente **Maglioni Arana Caparachin** y al estudiante **Piero Pool Chaupis Leguia**. El codigo `75177414` se tomo del correo institucional proporcionado. Verifica esos datos antes de entregar si el docente o el curso indican otro formato.
 
-## Generar cobertura Android
+## Subir a GitLab sin reemplazar GitHub
 
-Desde PowerShell en la raíz del proyecto:
+Este directorio ya tiene historial y el remoto `origin` de GitHub. **No ejecutes `rm -rf .git`, `git init` ni reemplaces `origin`**: eso desconectaria la copia de GitHub y no es necesario para entregar en una segunda plataforma.
+
+1. Entra a `https://gitlab.quantumdevops.online` y crea/inicia tu cuenta. El manual pide usar el codigo de estudiante como usuario y el correo institucional.
+2. Crea un proyecto en blanco. Desmarca la inicializacion con README para mantener el primer push sencillo.
+3. Copia la URL HTTPS que GitLab muestra para ese proyecto.
+4. Desde PowerShell, en la raiz de este repositorio, agrega GitLab como remoto adicional y envia la rama `main`:
 
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-$env:Path = "$env:JAVA_HOME\bin;$env:Path"
-.\gradlew.bat testDebugUnitTestCoverage
+git remote add gitlab <URL-HTTPS-DEL-PROYECTO>
+git push -u gitlab main
 ```
 
-El XML se escribe en `qa/coverage/jacoco.xml`, fuera de `build/`, para que el archivo de cobertura pueda incluirse en el commit. No cambies los umbrales ni excluyas carpetas de código para inflar la nota. Si la cobertura real no llega a 80 %, amplía pruebas sobre lógica de negocio y reporta el valor observado.
+Si ya agregaste el remoto `gitlab`, actualiza su URL con `git remote set-url gitlab <URL-HTTPS-DEL-PROYECTO>` en vez de agregarlo otra vez. El inicio de sesion debe pedir tus credenciales; pega un token vigente solo en el cuadro de contrasena del gestor de credenciales. No lo pongas en la URL, comandos, archivos ni capturas.
 
-## Datos aún necesarios
+El token de acceso que se compartio anteriormente en la conversacion debe revocarse y reemplazarse por uno nuevo con expiracion y solo los permisos que indica el manual (`read_repository` y `write_repository`). No se incluye ningun token en el repositorio.
 
-`project.yml` está rellenado con los datos proporcionados: curso “Taller de Investigación II”, docente Maglioni Arana Caparachin y correo institucional, e integrante Piero Pool Chaupis Leguia. El código 75177414 se tomó del inicio del correo institucional, ya que indicaste que podía identificarse de esa forma. La ponderación está en 100 %, como confirmaste. El archivo descargado de ejemplo tenía datos de otro proyecto, otra persona, otro curso y 80 %; no se copiaron esos valores.
+## Revisar el pipeline
 
-## Token y remoto
+Despues del push, abre el proyecto en GitLab Quantum y ve a **Build > Pipelines**. Abre la ejecucion mas reciente y revisa las etapas `detect`, `quality` y `notify`:
 
-Un token de GitLab publicado en el chat debe revocarse desde Access Tokens y no reutilizarse. No se almacena en URL remota, archivos del proyecto, scripts ni historial de shell. Cuando se cree el repositorio académico, configura su URL HTTPS como remoto separado y usa Git Credential Manager para pegar un token nuevo en el diálogo local de contraseña. Los permisos deben limitarse a los scopes necesarios y con expiración.
+- `passed` indica que la ejecucion termino y se envio la notificacion; no garantiza una nota alta.
+- `running` sigue procesando; `pending` esta en cola.
+- Si falla, abre la etapa roja y conserva el mensaje completo del log para diagnosticarlo.
 
-El remoto actual `origin` continúa siendo GitHub (`Pool-NS/CotizadorLeguaIA`). No se reemplaza hasta tener la URL del proyecto Quantum para evitar afectar ese repositorio.
+La configuracion incluye una plantilla de pipeline mantenida por el curso. Este repositorio no contiene esa plantilla y no puede confirmar por adelantado su resultado, los hallazgos de Sonar ni el correo de notificacion.
 
+## Reglas de integridad de la evaluacion
+
+- No excluyas carpetas de codigo (`app/`, `backend/`, `src/` ni equivalentes) para mejorar artificialmente el puntaje. El manual penaliza estas exclusiones.
+- No agregues `node_modules`, entornos virtuales, `vendor`, `.git`, carpetas `build`, secretos ni archivos `.env` al commit.
+- No inventes ni rellenes resultados de calidad. Registra la nota y hallazgos que aparezcan realmente en el pipeline.
+- El archivo de cobertura JaCoCo versionado es una medicion anterior y no se debe presentar como cobertura vigente hasta regenerarlo para el commit evaluado.
+
+## Comprobaciones locales antes del push
+
+Desde la raiz del proyecto:
+
+```powershell
+git status --short --branch
+git check-ignore backend/api/.env backend/api/.venv/ app/build/
+git diff --check
+```
+
+Confirma que `.env`, entornos y compilados salen como ignorados, que no hay claves en los cambios y que el arbol de trabajo solo contiene los cambios que quieres entregar.
