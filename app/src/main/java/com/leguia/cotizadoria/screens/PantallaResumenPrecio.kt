@@ -25,7 +25,8 @@ import com.leguia.cotizadoria.data.StockMaterialRow
 import com.leguia.cotizadoria.domain.MaterialReadinessEvaluator
 import com.leguia.cotizadoria.domain.MaterialReadinessStatus
 import com.leguia.cotizadoria.components.EncabezadoPantalla
-import java.util.Locale
+import com.leguia.cotizadoria.ui.format.formatDecimal
+import com.leguia.cotizadoria.ui.format.formatMoney
 
 @Composable
 fun PantallaResumenPrecio(
@@ -41,76 +42,113 @@ fun PantallaResumenPrecio(
     ) {
         EncabezadoPantalla("Resumen de cotización", onVolver, subtitulo = "Revisa antes de guardar")
         if (cotizacion == null) {
-            Text("No hay datos de cotización disponibles.")
+            EmptyQuoteSummary()
         } else {
-            val dimensiones = listOfNotNull(
-                cotizacion.medidaLargo?.let(::formatDimension),
-                cotizacion.medidaAncho?.let(::formatDimension)
-            ).joinToString(" × ")
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(servicioNombre.ifBlank { "Servicio" }, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                    InfoRow("Código", cotizacion.codigoCotizacion)
-                    InfoRow("Atendió", cotizacion.operador)
-                    HorizontalDivider()
-                    Text("Solicitud", style = MaterialTheme.typography.titleMedium)
-                    Text(cotizacion.requerimientoCliente, style = MaterialTheme.typography.bodyLarge)
-                    Text("Tamaño: ${dimensiones.ifBlank { "Sin medidas" }}")
-                    cotizacion.medidaAlto?.let { InfoRow("Altura opcional", "${formatDimension(it)} m") }
-                    cotizacion.materialDescripcion?.let { InfoRow("Material", it) }
-                    if (cotizacion.medidaAlto != null) {
-                        Text("La altura queda registrada, pero las tarifas y el consumo configurados actualmente se basan en largo × ancho. Confirma con el jefe si la altura cambia el precio o el material necesario.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                    }
-                    cotizacion.tipoCarpa?.let { type ->
-                        InfoRow("Carpa", if (type == "CERRADA") "Cerrada" else "Abierta")
-                        val largestDimension = listOfNotNull(cotizacion.medidaLargo, cotizacion.medidaAncho).maxOrNull()
-                        if (largestDimension != null) {
-                            InfoRow("Estructura", if (largestDimension >= 4.0) "Tubo galvanizado" else "Tubo electro")
-                        }
-                        if (type == "CERRADA") {
-                            InfoRow("Ventanas", cotizacion.cantidadVentanas?.toString() ?: "—")
-                            InfoRow("Puertas", cotizacion.cantidadPuertas?.toString() ?: "—")
-                        }
-                    }
-                    cotizacion.tipoMoto?.let { InfoRow("Tipo de moto", it) }
-                }
-            }
-
-            if (cotizacion.estado == "PENDIENTE_PRECIO") {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Precio pendiente", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error)
-                        Text("No hay un precio aprobado para este servicio y tamaño exacto. El jefe puede configurarlo en Panel de Administración → Tarifas.")
-                    }
-                }
-            } else {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Detalle del precio", style = MaterialTheme.typography.titleLarge)
-                        InfoRow("Tarifa aprobada", money(cotizacion.precioReferencial))
-                        if (cotizacion.descuentoMonto > 0.0) InfoRow("Descuento", "− ${money(cotizacion.descuentoMonto)}")
-                        HorizontalDivider()
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("TOTAL", style = MaterialTheme.typography.titleMedium)
-                            Text(money(cotizacion.precioFinal), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                }
-            }
-
+            QuoteDetailsCard(cotizacion, servicioNombre)
+            QuotePriceCard(cotizacion)
             MaterialReadinessCard(cotizacion, servicioNombre, stock)
+            QuoteSaveAction(cotizacion, onFinalizarCotizacion)
+        }
+    }
+}
 
-            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
-                Text(
-                    "Verifica el servicio, el largo, el ancho y el precio antes de guardar.",
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Button(onClick = { onFinalizarCotizacion(cotizacion) }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (cotizacion.estado == "PENDIENTE_PRECIO") "Guardar solicitud pendiente" else "Confirmar y guardar")
+@Composable
+private fun EmptyQuoteSummary() {
+    Text("No hay datos de cotización disponibles.")
+}
+
+@Composable
+private fun QuoteDetailsCard(cotizacion: CotizacionEntity, servicioNombre: String) {
+    val dimensions = listOfNotNull(
+        cotizacion.medidaLargo?.let(::formatDimension),
+        cotizacion.medidaAncho?.let(::formatDimension)
+    ).joinToString(" × ")
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(servicioNombre.ifBlank { "Servicio" }, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            InfoRow("Código", cotizacion.codigoCotizacion)
+            InfoRow("Atendió", cotizacion.operador)
+            HorizontalDivider()
+            Text("Solicitud", style = MaterialTheme.typography.titleMedium)
+            Text(cotizacion.requerimientoCliente, style = MaterialTheme.typography.bodyLarge)
+            Text("Tamaño: ${dimensions.ifBlank { "Sin medidas" }}")
+            cotizacion.medidaAlto?.let { InfoRow("Altura opcional", "${formatDimension(it)} m") }
+            cotizacion.materialDescripcion?.let { InfoRow("Material", it) }
+            if (cotizacion.medidaAlto != null) HeightPricingNotice()
+            cotizacion.tipoCarpa?.let { CarpaDetails(cotizacion, it) }
+            cotizacion.tipoMoto?.let { InfoRow("Tipo de moto", it) }
+        }
+    }
+}
+
+@Composable
+private fun HeightPricingNotice() {
+    Text(
+        "La altura queda registrada, pero las tarifas y el consumo configurados actualmente se basan en largo × ancho. Confirma con el jefe si la altura cambia el precio o el material necesario.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error
+    )
+}
+
+@Composable
+private fun CarpaDetails(cotizacion: CotizacionEntity, type: String) {
+    InfoRow("Carpa", if (type == "CERRADA") "Cerrada" else "Abierta")
+    val largestDimension = listOfNotNull(cotizacion.medidaLargo, cotizacion.medidaAncho).maxOrNull()
+    largestDimension?.let {
+        InfoRow("Estructura", if (it >= 4.0) "Tubo galvanizado" else "Tubo electro")
+    }
+    if (type == "CERRADA") {
+        InfoRow("Ventanas", cotizacion.cantidadVentanas?.toString() ?: "—")
+        InfoRow("Puertas", cotizacion.cantidadPuertas?.toString() ?: "—")
+    }
+}
+
+@Composable
+private fun QuotePriceCard(cotizacion: CotizacionEntity) {
+    if (cotizacion.estado == "PENDIENTE_PRECIO") {
+        PendingPriceCard()
+    } else {
+        ApprovedPriceCard(cotizacion)
+    }
+}
+
+@Composable
+private fun PendingPriceCard() {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Precio pendiente", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error)
+            Text("No hay un precio aprobado para este servicio y tamaño exacto. El jefe puede configurarlo en Panel de Administración → Tarifas.")
+        }
+    }
+}
+
+@Composable
+private fun ApprovedPriceCard(cotizacion: CotizacionEntity) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Detalle del precio", style = MaterialTheme.typography.titleLarge)
+            InfoRow("Tarifa aprobada", money(cotizacion.precioReferencial))
+            if (cotizacion.descuentoMonto > 0.0) InfoRow("Descuento", "− ${money(cotizacion.descuentoMonto)}")
+            HorizontalDivider()
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("TOTAL", style = MaterialTheme.typography.titleMedium)
+                Text(money(cotizacion.precioFinal), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
             }
         }
+    }
+}
+
+@Composable
+private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEntity) -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
+        Text(
+            "Verifica el servicio, el largo, el ancho y el precio antes de guardar.",
+            modifier = Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+    Button(onClick = { onSave(cotizacion) }, modifier = Modifier.fillMaxWidth()) {
+        Text(if (cotizacion.estado == "PENDIENTE_PRECIO") "Guardar solicitud pendiente" else "Confirmar y guardar")
     }
 }
 
@@ -161,6 +199,6 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
-private fun money(value: Double): String = String.format(Locale("es", "PE"), "S/ %.2f", value)
 private fun formatDimension(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
-private fun decimal(value: Double): String = String.format(Locale("es", "PE"), "%.2f", value)
+private fun money(value: Double): String = formatMoney(value)
+private fun decimal(value: Double): String = formatDecimal(value)

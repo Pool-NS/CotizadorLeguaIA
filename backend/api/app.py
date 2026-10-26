@@ -87,7 +87,16 @@ async def health() -> dict[str, bool]:
     return {"ok": True, "ai_configured": bool(os.getenv("GEMINI_API_KEY"))}
 
 
-@app.post("/v1/interpret", response_model=InterpretationResponse)
+@app.post(
+    "/v1/interpret",
+    responses={
+        400: {"description": "Gemini rechazó el formato o la configuración de generación."},
+        404: {"description": "El modelo configurado no existe o no está disponible."},
+        429: {"description": "Se alcanzó la cuota o el límite de solicitudes del proveedor."},
+        502: {"description": "El proveedor no respondió correctamente o devolvió una respuesta inválida."},
+        503: {"description": "El proveedor de IA no está configurado o no autorizó la solicitud."},
+    },
+)
 async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -122,18 +131,8 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code
         logger.warning("Gemini request failed with HTTP %s", status_code)
-        if status_code == 401:
-            raise HTTPException(status_code=503, detail="Gemini did not authenticate the configured API key.") from exc
-        if status_code == 403:
-            raise HTTPException(status_code=503, detail="The Gemini API key lacks permission for this project or API.") from exc
-        if status_code == 400:
-            raise HTTPException(status_code=400, detail="Gemini rejected the request format or generation settings.") from exc
-        if status_code == 404:
-            raise HTTPException(status_code=404, detail="The configured Gemini model was not found or is unavailable.") from exc
-        if status_code == 429:
-            raise HTTPException(status_code=429, detail="Gemini quota or rate limit reached.") from exc
-        raise HTTPException(status_code=502, detail="Gemini provider request failed.") from exc
-    except (httpx.RequestError, ValueError, json.JSONDecodeError, ValidationError) as exc:
+        raise _provider_exception(status_code) from exc
+    except (httpx.RequestError, ValueError, ValidationError) as exc:
         raise HTTPException(status_code=502, detail="AI provider returned an invalid interpretation.") from exc
 
     if result.length_m is not None and result.length_m <= 0:
@@ -141,3 +140,24 @@ async def interpret(request: InterpretationRequest) -> InterpretationResponse:
     if result.width_m is not None and result.width_m <= 0:
         result.width_m = None
     return result
+
+
+def _provider_exception(status_code: int) -> HTTPException:
+    if status_code in (401, 403):
+        return HTTPException(
+            status_code=503,
+            detail="Gemini did not authorize the configured API key or project.",
+        )
+    if status_code == 400:
+        return HTTPException(
+            status_code=400,
+            detail="Gemini rejected the request format or generation settings.",
+        )
+    if status_code == 404:
+        return HTTPException(
+            status_code=404,
+            detail="The configured Gemini model was not found or is unavailable.",
+        )
+    if status_code == 429:
+        return HTTPException(status_code=429, detail="Gemini quota or rate limit reached.")
+    return HTTPException(status_code=502, detail="Gemini provider request failed.")

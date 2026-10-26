@@ -10,7 +10,7 @@ data class RequirementInterpretation(
 )
 
 /** Implementations may suggest structure only; a person reviews and confirms all fields. */
-interface GenerativeAiClient {
+fun interface GenerativeAiClient {
     suspend fun interpret(requirement: String): Result<RequirementInterpretation>
 }
 

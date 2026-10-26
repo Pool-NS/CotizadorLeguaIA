@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 
 /** Calls the private project backend; provider credentials never enter the Android app. */
 class BackendGenerativeAiClient(private val baseUrl: String) : GenerativeAiClient {
@@ -14,7 +14,8 @@ class BackendGenerativeAiClient(private val baseUrl: String) : GenerativeAiClien
             runCatching {
                 require(requirement.isNotBlank()) { "Escribe o dicta un requerimiento." }
                 require(baseUrl.isNotBlank()) { "Configura la URL del backend de IA." }
-                val connection = (URL("${baseUrl.trimEnd('/')}/v1/interpret").openConnection() as HttpURLConnection)
+                val endpoint = URI.create("${baseUrl.trimEnd('/')}/v1/interpret").toURL()
+                val connection = endpoint.openConnection() as HttpURLConnection
                 try {
                     connection.requestMethod = "POST"
                     connection.connectTimeout = 8_000

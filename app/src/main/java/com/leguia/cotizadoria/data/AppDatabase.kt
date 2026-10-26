@@ -168,21 +168,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private const val TARFLEX_200_GRAMS = "Tarflex 200 gramos"
+        private const val TARFLEX_300_GRAMS = "Tarflex 300 gramos"
+
         private data class TariffSeed(val material: String, val length: Double, val width: Double, val price: Double)
 
         private val APPROVED_TOLDO_TARIFFS = listOf(
-            TariffSeed("Tarflex 200 gramos", 3.0, 4.0, 120.0),
-            TariffSeed("Tarflex 200 gramos", 4.0, 4.0, 130.0),
-            TariffSeed("Tarflex 200 gramos", 5.0, 4.0, 240.0),
-            TariffSeed("Tarflex 200 gramos", 6.0, 4.0, 150.0),
-            TariffSeed("Tarflex 200 gramos", 6.0, 5.0, 200.0),
-            TariffSeed("Tarflex 200 gramos", 2.0, 6.0, 290.0),
-            TariffSeed("Tarflex 300 gramos", 3.0, 4.0, 200.0),
-            TariffSeed("Tarflex 300 gramos", 4.0, 4.0, 210.0),
-            TariffSeed("Tarflex 300 gramos", 5.0, 4.0, 240.0),
-            TariffSeed("Tarflex 300 gramos", 6.0, 4.0, 270.0),
-            TariffSeed("Tarflex 300 gramos", 6.0, 5.0, 320.0),
-            TariffSeed("Tarflex 300 gramos", 6.0, 6.0, 390.0),
+            TariffSeed(TARFLEX_200_GRAMS, 3.0, 4.0, 120.0),
+            TariffSeed(TARFLEX_200_GRAMS, 4.0, 4.0, 130.0),
+            TariffSeed(TARFLEX_200_GRAMS, 5.0, 4.0, 240.0),
+            TariffSeed(TARFLEX_200_GRAMS, 6.0, 4.0, 150.0),
+            TariffSeed(TARFLEX_200_GRAMS, 6.0, 5.0, 200.0),
+            TariffSeed(TARFLEX_200_GRAMS, 2.0, 6.0, 290.0),
+            TariffSeed(TARFLEX_300_GRAMS, 3.0, 4.0, 200.0),
+            TariffSeed(TARFLEX_300_GRAMS, 4.0, 4.0, 210.0),
+            TariffSeed(TARFLEX_300_GRAMS, 5.0, 4.0, 240.0),
+            TariffSeed(TARFLEX_300_GRAMS, 6.0, 4.0, 270.0),
+            TariffSeed(TARFLEX_300_GRAMS, 6.0, 5.0, 320.0),
+            TariffSeed(TARFLEX_300_GRAMS, 6.0, 6.0, 390.0),
             TariffSeed("Lona orillo rojo", 6.0, 4.0, 600.0),
             TariffSeed("Lona orillo rojo", 7.0, 4.0, 700.0)
         )

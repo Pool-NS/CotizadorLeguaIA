@@ -29,7 +29,6 @@ fun PantallaInicio(
     versionNombre: String,
     operadorSeleccionado: String,
     esModoOffline: Boolean,
-    onCambiarOperador: (String) -> Unit,
     onAlternarModoRed: (Boolean) -> Unit,
     onIniciarNuevaCotizacion: () -> Unit,
     onIrAPanelAdmin: () -> Unit

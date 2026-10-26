@@ -47,84 +47,182 @@ fun PantallaTarifas(
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         LazyColumn(Modifier.weight(1f)) {
             items(servicios) { servicio ->
-                val serviceRates = tarifas.filter { it.servicioId == servicio.id && it.concepto.startsWith("MEDIDA:") }
-                    .sortedBy { it.concepto }
-                Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(servicio.nombre, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                        if (serviceRates.isEmpty()) Text("No hay tamaños con precio aprobado.")
-                        serviceRates.forEach { rate ->
-                            val keyParts = rate.concepto.removePrefix("MEDIDA:").split(':', limit = 3)
-                            val variant = keyParts.getOrNull(0).orEmpty()
-                            val isLegacyRate = keyParts.size < 3
-                            val material = if (isLegacyRate) "Material sin definir" else keyParts.getOrNull(1).orEmpty()
-                            val size = (if (isLegacyRate) keyParts.getOrNull(1) else keyParts.getOrNull(2)).orEmpty().replace('x', '×')
-                            val label = listOfNotNull(
-                                variant.takeIf { servicioEsCarpas(servicio.nombre) && it != "BASE" },
-                                material,
-                                size
-                            ).joinToString(" · ")
-                            Text("$label — S/ ${rate.precioUnitario}", style = MaterialTheme.typography.bodyLarge)
-                        }
-                        if (servicioEsCarpas(servicio.nombre)) {
-                            Text("Tipo de carpa", style = MaterialTheme.typography.labelLarge)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf("ABIERTA" to "Abierta", "CERRADA" to "Cerrada").forEach { (value, label) ->
-                                    if ((variants[servicio.id] ?: "ABIERTA") == value) {
-                                        Button(onClick = { variants[servicio.id] = value }) { Text(label) }
-                                    } else {
-                                        OutlinedButton(onClick = { variants[servicio.id] = value }) { Text(label) }
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = lengths[servicio.id].orEmpty(),
-                                onValueChange = { lengths[servicio.id] = it; error = null },
-                                label = { Text("Largo") }, modifier = Modifier.weight(1f), singleLine = true
-                            )
-                            OutlinedTextField(
-                                value = widths[servicio.id].orEmpty(),
-                                onValueChange = { widths[servicio.id] = it; error = null },
-                                label = { Text("Ancho") }, modifier = Modifier.weight(1f), singleLine = true
-                            )
-                        }
-                        OutlinedTextField(
-                            value = materials[servicio.id].orEmpty(),
-                            onValueChange = { materials[servicio.id] = it; error = null },
-                            label = { Text("Material exacto") },
-                            placeholder = { Text("Ejemplo: lona, tela Oxford") },
-                            supportingText = { Text("La tarifa se aplicará solo a este material. Usa el mismo nombre en cada cotización.") },
-                            modifier = Modifier.fillMaxWidth(), singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = prices[servicio.id].orEmpty(),
-                            onValueChange = { prices[servicio.id] = it; error = null },
-                            label = { Text("Precio aprobado (S/)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-                        )
-                        Button(onClick = {
-                            val length = lengths[servicio.id]?.replace(',', '.')?.toDoubleOrNull()
-                            val width = widths[servicio.id]?.replace(',', '.')?.toDoubleOrNull()
-                            val price = prices[servicio.id]?.replace(',', '.')?.toDoubleOrNull()
-                            when {
-                                length == null || !length.isFinite() || length <= 0.0 -> error = "Ingresa un largo mayor que cero."
-                                width == null || !width.isFinite() || width <= 0.0 -> error = "Ingresa un ancho mayor que cero."
-                                materials[servicio.id].isNullOrBlank() -> error = "Indica el material para asociar el precio aprobado."
-                                price == null || !price.isFinite() || price <= 0.0 -> error = "Ingresa el precio aprobado mayor que cero."
-                                else -> {
-                                    val variant = if (servicioEsCarpas(servicio.nombre)) variants[servicio.id] ?: "ABIERTA" else "BASE"
-                                    onGuardar(servicio.id, length, width, variant, materials.getValue(servicio.id).trim(), price)
-                                    lengths.remove(servicio.id); widths.remove(servicio.id); prices.remove(servicio.id); materials.remove(servicio.id); error = null
-                                }
-                            }
-                        }, modifier = Modifier.fillMaxWidth()) { Text("Guardar precio de este tamaño") }
+                TariffServiceCard(
+                    service = servicio,
+                    rates = tarifas.filter { it.servicioId == servicio.id && it.concepto.startsWith("MEDIDA:") }.sortedBy { it.concepto },
+                    selectedVariant = variants[servicio.id] ?: "ABIERTA",
+                    onVariantChange = { variants[servicio.id] = it },
+                    length = lengths[servicio.id].orEmpty(),
+                    onLengthChange = { lengths[servicio.id] = it; error = null },
+                    width = widths[servicio.id].orEmpty(),
+                    onWidthChange = { widths[servicio.id] = it; error = null },
+                    material = materials[servicio.id].orEmpty(),
+                    onMaterialChange = { materials[servicio.id] = it; error = null },
+                    price = prices[servicio.id].orEmpty(),
+                    onPriceChange = { prices[servicio.id] = it; error = null },
+                    onError = { error = it },
+                    onGuardar = { length, width, variant, material, price ->
+                        onGuardar(servicio.id, length, width, variant, material, price)
+                        lengths.remove(servicio.id)
+                        widths.remove(servicio.id)
+                        prices.remove(servicio.id)
+                        materials.remove(servicio.id)
+                        error = null
                     }
-                }
+                )
             }
         }
     }
 }
+
+@Composable
+private fun TariffServiceCard(
+    service: ServicioEntity,
+    rates: List<ParametroPrecioEntity>,
+    selectedVariant: String,
+    onVariantChange: (String) -> Unit,
+    length: String,
+    onLengthChange: (String) -> Unit,
+    width: String,
+    onWidthChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
+    price: String,
+    onPriceChange: (String) -> Unit,
+    onError: (String) -> Unit,
+    onGuardar: (Double, Double, String, String, Double) -> Unit
+) {
+    Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(service.nombre, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            ApprovedRatesList(service, rates)
+            if (servicioEsCarpas(service.nombre)) {
+                TentVariantSelector(selectedVariant, onVariantChange)
+            }
+            TariffRateEditor(
+                service = service,
+                variant = selectedVariant,
+                length = length,
+                onLengthChange = onLengthChange,
+                width = width,
+                onWidthChange = onWidthChange,
+                material = material,
+                onMaterialChange = onMaterialChange,
+                price = price,
+                onPriceChange = onPriceChange,
+                onError = onError,
+                onGuardar = onGuardar
+            )
+        }
+    }
+}
+
+@Composable
+private fun ApprovedRatesList(service: ServicioEntity, rates: List<ParametroPrecioEntity>) {
+    if (rates.isEmpty()) Text("No hay tamaños con precio aprobado.")
+    rates.forEach { rate ->
+        val parts = rate.concepto.removePrefix("MEDIDA:").split(':', limit = 3)
+        val isLegacy = parts.size < 3
+        val variant = parts.getOrNull(0).orEmpty()
+        val material = if (isLegacy) "Material sin definir" else parts.getOrNull(1).orEmpty()
+        val size = (if (isLegacy) parts.getOrNull(1) else parts.getOrNull(2)).orEmpty().replace('x', '×')
+        val label = listOfNotNull(variant.takeIf { servicioEsCarpas(service.nombre) && it != "BASE" }, material, size)
+            .joinToString(" · ")
+        Text("$label — S/ ${rate.precioUnitario}", style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+private fun TentVariantSelector(selected: String, onSelect: (String) -> Unit) {
+    Text("Tipo de carpa", style = MaterialTheme.typography.labelLarge)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf("ABIERTA" to "Abierta", "CERRADA" to "Cerrada").forEach { (value, label) ->
+            if (selected == value) {
+                Button(onClick = { onSelect(value) }) { Text(label) }
+            } else {
+                OutlinedButton(onClick = { onSelect(value) }) { Text(label) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TariffRateEditor(
+    service: ServicioEntity,
+    variant: String,
+    length: String,
+    onLengthChange: (String) -> Unit,
+    width: String,
+    onWidthChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
+    price: String,
+    onPriceChange: (String) -> Unit,
+    onError: (String) -> Unit,
+    onGuardar: (Double, Double, String, String, Double) -> Unit
+) {
+    Spacer(Modifier.height(4.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(length, onLengthChange, label = { Text("Largo") }, modifier = Modifier.weight(1f), singleLine = true)
+        OutlinedTextField(width, onWidthChange, label = { Text("Ancho") }, modifier = Modifier.weight(1f), singleLine = true)
+    }
+    OutlinedTextField(
+        value = material,
+        onValueChange = onMaterialChange,
+        label = { Text("Material exacto") },
+        placeholder = { Text("Ejemplo: lona, tela Oxford") },
+        supportingText = { Text("La tarifa se aplicará solo a este material. Usa el mismo nombre en cada cotización.") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
+    OutlinedTextField(
+        value = price,
+        onValueChange = onPriceChange,
+        label = { Text("Precio aprobado (S/)") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
+    Button(
+        onClick = { submitRate(service, variant, length, width, material, price, onError, onGuardar) },
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("Guardar precio de este tamaño") }
+}
+
+private fun submitRate(
+    service: ServicioEntity,
+    selectedVariant: String,
+    lengthText: String,
+    widthText: String,
+    materialText: String,
+    priceText: String,
+    onError: (String) -> Unit,
+    onGuardar: (Double, Double, String, String, Double) -> Unit
+) {
+    val input = TariffInput(lengthText.toDecimal(), widthText.toDecimal(), materialText.trim(), priceText.toDecimal())
+    val validationError = input.validationError()
+    if (validationError != null) {
+        onError(validationError)
+        return
+    }
+    onGuardar(
+        input.length!!,
+        input.width!!,
+        if (servicioEsCarpas(service.nombre)) selectedVariant else "BASE",
+        input.material,
+        input.price!!
+    )
+}
+
+private data class TariffInput(val length: Double?, val width: Double?, val material: String, val price: Double?) {
+    fun validationError(): String? = when {
+        length == null || !length.isFinite() || length <= 0.0 -> "Ingresa un largo mayor que cero."
+        width == null || !width.isFinite() || width <= 0.0 -> "Ingresa un ancho mayor que cero."
+        material.isBlank() -> "Indica el material para asociar el precio aprobado."
+        price == null || !price.isFinite() || price <= 0.0 -> "Ingresa el precio aprobado mayor que cero."
+        else -> null
+    }
+}
+
+private fun String.toDecimal(): Double? = replace(',', '.').toDoubleOrNull()
 
 private fun servicioEsCarpas(nombre: String): Boolean = nombre.equals("Carpas", ignoreCase = true)

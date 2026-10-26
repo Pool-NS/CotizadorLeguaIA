@@ -31,6 +31,8 @@ import com.leguia.cotizadoria.data.ServicioEntity
 import com.leguia.cotizadoria.data.StockMaterialRow
 import com.leguia.cotizadoria.data.SyntheticDemoDashboard
 import com.leguia.cotizadoria.domain.QuoteStatus
+import com.leguia.cotizadoria.ui.format.formatMoney
+import com.leguia.cotizadoria.ui.format.formatPercent
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -103,10 +105,10 @@ fun PantallaPanelAdmin(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MetricCard("Concretadas", completedCount.toString(), Modifier.weight(1f))
-                MetricCard("Conversión", String.format(Locale("es", "PE"), "%.1f%%", conversionPercent), Modifier.weight(1f))
+                MetricCard("Conversión", formatPercent(conversionPercent), Modifier.weight(1f))
             }
         }
-        item { MetricCard("Valor final registrado", String.format(Locale("es", "PE"), "S/ %.2f", quotedValue), Modifier.fillMaxWidth()) }
+        item { MetricCard("Valor final registrado", formatMoney(quotedValue), Modifier.fillMaxWidth()) }
         item {
             Text("Estos datos pertenecen a este dispositivo. Sin una base de datos central, los teléfonos no comparten el panel.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -178,7 +180,7 @@ fun TarjetaCotizacionItem(cotizacion: CotizacionEntity, onRegistrarResultado: (C
             if (cotizacion.estado == "PENDIENTE_PRECIO") {
                 Text("Pendiente de tarifa aprobada", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             } else {
-                Text(String.format(Locale("es", "PE"), "Total: S/ %.2f", cotizacion.precioFinal), style = MaterialTheme.typography.bodyMedium)
+                Text("Total: ${formatMoney(cotizacion.precioFinal)}", style = MaterialTheme.typography.bodyMedium)
             }
             if (cotizacion.estado == QuoteStatus.PENDIENTE.name && cotizacion.precioReferencial > 0.0) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.ActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,8 @@ import androidx.compose.ui.Modifier
 import com.leguia.cotizadoria.data.AppDatabase
 import com.leguia.cotizadoria.ai.BackendGenerativeAiClient
 import com.leguia.cotizadoria.data.CotizacionEntity
+import com.leguia.cotizadoria.data.ParametroPrecioEntity
+import com.leguia.cotizadoria.data.ServicioEntity
 import com.leguia.cotizadoria.data.CotizadorRepository
 import com.leguia.cotizadoria.data.SyntheticDemoDataLoader
 import com.leguia.cotizadoria.domain.SpokenRequirementParser
@@ -91,29 +94,17 @@ class MainActivity : ComponentActivity() {
             val reconocedorLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
             ) { resultado ->
-                val transcripcion = resultado.data
-                    ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                    ?.firstOrNull()
-                    ?.trim()
-                    .orEmpty()
-                if (resultado.resultCode != Activity.RESULT_OK || transcripcion.isBlank()) {
-                    mensajeVoz = "No se recibió una transcripción. Puedes intentarlo otra vez o elegir el servicio manualmente."
-                } else {
-                    val interpretacion = SpokenRequirementParser.interpret(transcripcion)
-                    val servicioDetectado = interpretacion.service?.let { nombre ->
-                        listaServicios.firstOrNull { it.nombre.equals(nombre, ignoreCase = true) }
-                    }
-                    if (servicioDetectado == null) {
-                        mensajeVoz = if (interpretacion.ambiguousServices.isNotEmpty()) {
-                            "Mencionaste más de un servicio (${interpretacion.ambiguousServices.joinToString()}). Elige uno manualmente."
-                        } else "No identifiqué Carpas, Toldos o Tapizado. Elige el servicio manualmente."
-                    } else {
+                processVoiceResult(
+                    result = resultado,
+                    services = listaServicios,
+                    onError = { mensajeVoz = it },
+                    onServiceSelected = { serviceId, transcript ->
                         mensajeVoz = null
-                        servicioIdSeleccionado = servicioDetectado.id
-                        transcripcionVozInicial = transcripcion
+                        servicioIdSeleccionado = serviceId
+                        transcripcionVozInicial = transcript
                         pantallaActual = DestinoPantalla.FORMULARIO_SERVICIO
                     }
-                }
+                )
             }
 
             Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -128,7 +119,6 @@ class MainActivity : ComponentActivity() {
                                 versionNombre = BuildConfig.VERSION_NAME,
                                 operadorSeleccionado = operadorActual,
                                 esModoOffline = esModoOffline,
-                                onCambiarOperador = { nuevoOperador -> operadorActual = nuevoOperador },
                                 onAlternarModoRed = { esModoOffline = !esModoOffline },
                                 onIniciarNuevaCotizacion = { pantallaActual = DestinoPantalla.SELECCION_SERVICIO },
                                 onIrAPanelAdmin = { pantallaActual = DestinoPantalla.LOGIN_ADMIN }
@@ -204,31 +194,7 @@ class MainActivity : ComponentActivity() {
                                 errorIA = aiInterpretationState.error,
                                 onInterpretarRequerimiento = viewModel::interpretarRequerimiento,
                                 onGuardarFormulario = { cotizacionIngresada ->
-                                    val priceKey = cotizacionIngresada.medidaLargo?.let { length ->
-                                        cotizacionIngresada.medidaAncho?.let { width ->
-                                            val variant = cotizacionIngresada.tipoCarpa ?: "BASE"
-                                            runCatching {
-                                                DimensionPriceKey.forSize(length, width, variant, cotizacionIngresada.materialDescripcion.orEmpty())
-                                            }.getOrNull()
-                                        }
-                                    }
-                                    val activeRate = tarifasActivas.firstOrNull {
-                                        it.servicioId == cotizacionIngresada.servicioId && it.concepto == priceKey
-                                    }
-                                    val calculated = if (activeRate != null) {
-                                        QuotePricingCalculator.calculate(
-                                            listOf(PriceLine(ConfiguredPrice(activeRate.precioUnitario, activeRate.unidadMedida), 1.0)),
-                                            humanDiscount = 0.0
-                                        )
-                                    } else null
-                                    cotizacionGenerada = when (val outcome = calculated) {
-                                        is PricingOutcome.Calculated -> cotizacionIngresada.copy(
-                                            precioReferencial = outcome.result.reference,
-                                            precioFinal = outcome.result.final,
-                                            estado = "PENDIENTE"
-                                        )
-                                        else -> cotizacionIngresada.copy(precioReferencial = 0.0, precioFinal = 0.0, estado = "PENDIENTE_PRECIO")
-                                    }
+                                    cotizacionGenerada = applyApprovedPrice(cotizacionIngresada, tarifasActivas)
                                     pantallaActual = DestinoPantalla.RESUMEN_PRECIO
                                 },
                                 onVolver = {
@@ -239,34 +205,13 @@ class MainActivity : ComponentActivity() {
                         }
 
                         DestinoPantalla.RESUMEN_PRECIO -> {
-                            val cotizacionValida = cotizacionGenerada ?: CotizacionEntity(
-                                id = 0,
-                                codigoCotizacion = "COT-000",
-                                servicioId = servicioIdSeleccionado,
-                                materialId = null,
-                                operador = operadorActual,
-                                requerimientoCliente = "Sin datos registrados",
-                                interpretacionIaJson = null,
-                                corregidoPorHumano = false,
-                                medidaLargo = 0.0,
-                                medidaAncho = 0.0,
-                                medidaAlto = null,
-                                precioReferencial = 0.0,
-                                descuentoMonto = 0.0,
-                                descuentoPorcentaje = 0.0,
-                                precioFinal = 0.0,
-                                estado = "PENDIENTE",
-                                fechaHoraInicio = System.currentTimeMillis(),
-                                fechaHoraFin = null,
-                                esModoOffline = esModoOffline
-                            )
-
                             PantallaResumenPrecio(
-                                cotizacion = cotizacionValida,
-                                servicioNombre = listaServicios.firstOrNull { it.id == cotizacionValida.servicioId }?.nombre.orEmpty(),
+                                cotizacion = cotizacionGenerada,
+                                servicioNombre = listaServicios.firstOrNull { it.id == cotizacionGenerada?.servicioId }?.nombre.orEmpty(),
                                 stock = listaStock,
-                                onFinalizarCotizacion = {
-                                    viewModel.registrarCotizacion(cotizacionValida) {
+                                onFinalizarCotizacion = { quote ->
+                                    viewModel.registrarCotizacion(quote) {
+                                        cotizacionGenerada = null
                                         pantallaActual = DestinoPantalla.INICIO
                                     }
                                 },
@@ -277,5 +222,62 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+private fun processVoiceResult(
+    result: ActivityResult,
+    services: List<ServicioEntity>,
+    onError: (String) -> Unit,
+    onServiceSelected: (Int, String) -> Unit
+) {
+    val transcript = result.data
+        ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+        ?.firstOrNull()
+        ?.trim()
+        .orEmpty()
+    if (result.resultCode != Activity.RESULT_OK || transcript.isBlank()) {
+        onError("No se recibió una transcripción. Puedes intentarlo otra vez o elegir el servicio manualmente.")
+        return
+    }
+
+    val parsed = SpokenRequirementParser.interpret(transcript)
+    val service = parsed.service?.let { name -> services.firstOrNull { it.nombre.equals(name, ignoreCase = true) } }
+    if (service == null) {
+        val error = if (parsed.ambiguousServices.isNotEmpty()) {
+            "Mencionaste más de un servicio (${parsed.ambiguousServices.joinToString()}). Elige uno manualmente."
+        } else {
+            "No identifiqué Carpas, Toldos o Tapizado. Elige el servicio manualmente."
+        }
+        onError(error)
+        return
+    }
+    onServiceSelected(service.id, transcript)
+}
+
+private fun applyApprovedPrice(
+    quote: CotizacionEntity,
+    activeRates: List<ParametroPrecioEntity>
+): CotizacionEntity {
+    val priceKey = quote.medidaLargo?.let { length ->
+        quote.medidaAncho?.let { width ->
+            runCatching {
+                DimensionPriceKey.forSize(length, width, quote.tipoCarpa ?: "BASE", quote.materialDescripcion.orEmpty())
+            }.getOrNull()
+        }
+    }
+    val activeRate = activeRates.firstOrNull { it.servicioId == quote.servicioId && it.concepto == priceKey }
+        ?: return quote.copy(precioReferencial = 0.0, precioFinal = 0.0, estado = "PENDIENTE_PRECIO")
+    val calculation = QuotePricingCalculator.calculate(
+        listOf(PriceLine(ConfiguredPrice(activeRate.precioUnitario, activeRate.unidadMedida), 1.0)),
+        humanDiscount = 0.0
+    )
+    return when (calculation) {
+        is PricingOutcome.Calculated -> quote.copy(
+            precioReferencial = calculation.result.reference,
+            precioFinal = calculation.result.final,
+            estado = "PENDIENTE"
+        )
+        else -> quote.copy(precioReferencial = 0.0, precioFinal = 0.0, estado = "PENDIENTE_PRECIO")
     }
 }

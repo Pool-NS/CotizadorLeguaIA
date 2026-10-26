@@ -26,7 +26,9 @@ import com.leguia.cotizadoria.components.GraficoBarras
 import com.leguia.cotizadoria.components.GraficoDona
 import com.leguia.cotizadoria.data.SyntheticDemoDashboard
 import com.leguia.cotizadoria.data.SyntheticDemoQuote
-import java.util.Locale
+import com.leguia.cotizadoria.ui.format.formatDecimal
+import com.leguia.cotizadoria.ui.format.formatMoney
+import com.leguia.cotizadoria.ui.format.formatPercent
 
 @Composable
 fun PantallaDemoDashboard(data: SyntheticDemoDashboard, onVolver: () -> Unit) {
@@ -145,6 +147,6 @@ private fun statusLabel(value: String): String = when (value) {
     else -> value.replace('_', ' ').lowercase().replaceFirstChar(Char::uppercase)
 }
 
-private fun money(value: Double): String = String.format(Locale("es", "PE"), "S/ %.2f", value)
-private fun decimal(value: Double): String = String.format(Locale("es", "PE"), "%.2f", value)
-private fun percent(value: Double): String = String.format(Locale("es", "PE"), "%.1f%%", value)
+private fun money(value: Double): String = formatMoney(value)
+private fun decimal(value: Double): String = formatDecimal(value)
+private fun percent(value: Double): String = formatPercent(value)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import random
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -18,17 +19,19 @@ SUMMARY_JSON = DATA_DIR / "synthetic_stock_dashboard.json"
 ANDROID_ASSET = ROOT / "app" / "src" / "main" / "assets" / "synthetic_stock_dashboard.json"
 
 SEED = 20261012
+SYNTHETIC_AREA_UNIT = "m² simulado"
+MOTORCYCLE_SERVICE_NAME = "Tapizado de moto"
 SIZE_OPTIONS = [(2, 2), (3, 2), (3, 3), (4, 3), (5, 4), (6, 4)]
 MATERIALS = {
     "Carpas": [
-        {"name": "Lino económico DEMO", "unit": "m² simulado", "stock": 32.0, "cost": 18.0, "rate": 95.0, "weight": "ECONOMICO"},
-        {"name": "Lino liviano DEMO", "unit": "m² simulado", "stock": 28.0, "cost": 22.0, "rate": 108.0, "weight": "LIVIANO"},
-        {"name": "Lino pesado DEMO", "unit": "m² simulado", "stock": 20.0, "cost": 29.0, "rate": 125.0, "weight": "PESADO"},
+        {"name": "Lino económico DEMO", "unit": SYNTHETIC_AREA_UNIT, "stock": 32.0, "cost": 18.0, "rate": 95.0, "weight": "ECONOMICO"},
+        {"name": "Lino liviano DEMO", "unit": SYNTHETIC_AREA_UNIT, "stock": 28.0, "cost": 22.0, "rate": 108.0, "weight": "LIVIANO"},
+        {"name": "Lino pesado DEMO", "unit": SYNTHETIC_AREA_UNIT, "stock": 20.0, "cost": 29.0, "rate": 125.0, "weight": "PESADO"},
     ],
     "Toldos": [
-        {"name": "Tarflex DEMO", "unit": "m² simulado", "stock": 24.0, "cost": 23.0, "rate": 112.0, "weight": "ESTANDAR"},
-        {"name": "Lona orillo azul DEMO", "unit": "m² simulado", "stock": 22.0, "cost": 25.0, "rate": 120.0, "weight": "ESTANDAR"},
-        {"name": "Lona orillo rojo DEMO", "unit": "m² simulado", "stock": 18.0, "cost": 26.0, "rate": 122.0, "weight": "ESTANDAR"},
+        {"name": "Tarflex DEMO", "unit": SYNTHETIC_AREA_UNIT, "stock": 24.0, "cost": 23.0, "rate": 112.0, "weight": "ESTANDAR"},
+        {"name": "Lona orillo azul DEMO", "unit": SYNTHETIC_AREA_UNIT, "stock": 22.0, "cost": 25.0, "rate": 120.0, "weight": "ESTANDAR"},
+        {"name": "Lona orillo rojo DEMO", "unit": SYNTHETIC_AREA_UNIT, "stock": 18.0, "cost": 26.0, "rate": 122.0, "weight": "ESTANDAR"},
     ],
     "Tapizado": [
         {"name": "Oxford DEMO", "unit": "m² equivalente DEMO", "stock": 9.0, "cost": 38.0, "rate": 155.0, "weight": "NO_APLICA"},
@@ -36,14 +39,107 @@ MATERIALS = {
 }
 
 
+def service_name_for_material(material: dict[str, object]) -> str:
+    if material["weight"] == "NO_APLICA":
+        return MOTORCYCLE_SERVICE_NAME
+    if str(material["name"]).startswith("Lino"):
+        return "Carpas"
+    return "Toldos"
+
+
+@dataclass(frozen=True)
+class QuoteScenario:
+    row: dict[str, str]
+    service: str
+    minutes: float
+    final_price: float
+    direct_cost: float
+    contribution: float
+    feasibility: str
+
+
+def build_quote_scenario(row: dict[str, str], rng: random.Random) -> QuoteScenario:
+    service = "Tapizado" if row["service_type"].strip().lower().startswith("tapizado") else row["service_type"].strip()
+    if service not in MATERIALS:
+        raise ValueError(f"Unexpected service in source: {service}")
+
+    material = rng.choice(MATERIALS[service])
+    length, width = rng.choice(SIZE_OPTIONS)
+    area = float(length * width)
+    tent_type = rng.choice(["ABIERTA", "CERRADA"]) if service == "Carpas" else "NO_APLICA"
+    consumption_factor = {
+        "Carpas": 1.55 if tent_type == "CERRADA" else 1.12,
+        "Toldos": 1.10,
+        "Tapizado": 0.55,
+    }[service]
+    required = area * consumption_factor
+    stock = float(material["stock"])
+    shortage = max(0.0, required - stock)
+    discount_pct = float(row["discount_percentage"])
+    surcharge = 1.35 if tent_type == "CERRADA" else 1.0
+    tariff_base = area * float(material["rate"]) * surcharge
+    discount_amount = tariff_base * discount_pct / 100.0
+    final_price = tariff_base - discount_amount
+    direct_cost = required * float(material["cost"])
+    contribution = final_price - direct_cost
+    feasibility = determine_feasibility(row["requirement_complete"] == "1", shortage, contribution)
+
+    output_row = dict(row)
+    output_row["source_synthetic_quote_amount"] = output_row.pop("quote_amount")
+    output_row.update({
+        "service_type": MOTORCYCLE_SERVICE_NAME if service == "Tapizado" else service,
+        "length_m": str(length),
+        "width_m": str(width),
+        "tent_type": tent_type,
+        "material_name": material["name"],
+        "material_weight_variant": material["weight"],
+        "material_unit": material["unit"],
+        "material_consumption_factor": f"{consumption_factor:.2f}",
+        "required_material_quantity": f"{required:.2f}",
+        "stock_snapshot_quantity": f"{stock:.2f}",
+        "material_shortage_quantity": f"{shortage:.2f}",
+        "material_status": "SUFICIENTE_EN_ESCENARIO" if shortage == 0 else "FALTANTE_EN_ESCENARIO",
+        "synthetic_tariff_per_m2": f"{float(material['rate']):.2f}",
+        "simulated_tariff_before_discount": f"{tariff_base:.2f}",
+        "simulated_discount_amount": f"{discount_amount:.2f}",
+        "simulated_final_price": f"{final_price:.2f}",
+        "synthetic_material_unit_cost": f"{float(material['cost']):.2f}",
+        "simulated_direct_material_cost": f"{direct_cost:.2f}",
+        "simulated_gross_contribution_before_labor_overhead": f"{contribution:.2f}",
+        "synthetic_feasibility_result": feasibility,
+        "simulation_flag": "true",
+    })
+    return QuoteScenario(
+        row=output_row,
+        service=service,
+        minutes=float(row["quotation_time_minutes"]),
+        final_price=final_price,
+        direct_cost=direct_cost,
+        contribution=contribution,
+        feasibility=feasibility,
+    )
+
+
+def determine_feasibility(requirement_complete: bool, shortage: float, contribution: float) -> str:
+    if not requirement_complete:
+        return "REVISAR_DATOS"
+    if shortage > 0:
+        return "FALTA_STOCK"
+    if contribution <= 0:
+        return "REVISAR_MARGEN_DIRECTO"
+    return "FACTIBLE_CON_REGLAS_SINTETICAS"
+
+
 def main() -> None:
+    # Seeded randomness is intentional: this script creates reproducible synthetic samples,
+    # never credentials, tokens, or security-sensitive values.
     rng = random.Random(SEED)
     with SOURCE.open(newline="", encoding="utf-8-sig") as source_file:
         source_rows = list(csv.DictReader(source_file))
     if len(source_rows) != 200:
         raise ValueError(f"Expected 200 source rows, found {len(source_rows)}")
 
-    generated: list[dict[str, str]] = []
+    scenarios: list[QuoteScenario] = []
     times: list[float] = []
     prices: list[float] = []
     direct_costs: list[float] = []
@@ -52,73 +148,21 @@ def main() -> None:
     services: dict[str, dict[str, float | int]] = {}
 
     for row in source_rows:
-        service = "Tapizado" if row["service_type"].strip().lower().startswith("tapizado") else row["service_type"].strip()
-        if service not in MATERIALS:
-            raise ValueError(f"Unexpected service in source: {service}")
-        material = rng.choice(MATERIALS[service])
-        length, width = rng.choice(SIZE_OPTIONS)
-        area = float(length * width)
-        tent_type = rng.choice(["ABIERTA", "CERRADA"]) if service == "Carpas" else "NO_APLICA"
-        consumption_factor = {
-            "Carpas": 1.55 if tent_type == "CERRADA" else 1.12,
-            "Toldos": 1.10,
-            "Tapizado": 0.55,
-        }[service]
-        required = area * consumption_factor
-        stock = float(material["stock"])
-        shortage = max(0.0, required - stock)
-        discount_pct = float(row["discount_percentage"])
-        surcharge = 1.35 if tent_type == "CERRADA" else 1.0
-        tariff_base = area * float(material["rate"]) * surcharge
-        discount_amount = tariff_base * discount_pct / 100.0
-        final_price = tariff_base - discount_amount
-        direct_material_cost = required * float(material["cost"])
-        gross_contribution = final_price - direct_material_cost
-        complete = row["requirement_complete"] == "1"
-        if not complete:
-            feasibility = "REVISAR_DATOS"
-        elif shortage > 0:
-            feasibility = "FALTA_STOCK"
-        elif gross_contribution <= 0:
-            feasibility = "REVISAR_MARGEN_DIRECTO"
-        else:
-            feasibility = "FACTIBLE_CON_REGLAS_SINTETICAS"
-
-        output_row = dict(row)
-        output_row["source_synthetic_quote_amount"] = output_row.pop("quote_amount")
-        output_row.update({
-            "service_type": "Tapizado de moto" if service == "Tapizado" else service,
-            "length_m": str(length),
-            "width_m": str(width),
-            "tent_type": tent_type,
-            "material_name": material["name"],
-            "material_weight_variant": material["weight"],
-            "material_unit": material["unit"],
-            "material_consumption_factor": f"{consumption_factor:.2f}",
-            "required_material_quantity": f"{required:.2f}",
-            "stock_snapshot_quantity": f"{stock:.2f}",
-            "material_shortage_quantity": f"{shortage:.2f}",
-            "material_status": "SUFICIENTE_EN_ESCENARIO" if shortage == 0 else "FALTANTE_EN_ESCENARIO",
-            "synthetic_tariff_per_m2": f"{float(material['rate']):.2f}",
-            "simulated_tariff_before_discount": f"{tariff_base:.2f}",
-            "simulated_discount_amount": f"{discount_amount:.2f}",
-            "simulated_final_price": f"{final_price:.2f}",
-            "synthetic_material_unit_cost": f"{float(material['cost']):.2f}",
-            "simulated_direct_material_cost": f"{direct_material_cost:.2f}",
-            "simulated_gross_contribution_before_labor_overhead": f"{gross_contribution:.2f}",
-            "synthetic_feasibility_result": feasibility,
-            "simulation_flag": "true",
-        })
-        generated.append(output_row)
-        times.append(float(row["quotation_time_minutes"]))
-        prices.append(final_price)
-        direct_costs.append(direct_material_cost)
-        contributions.append(gross_contribution)
-        statuses[feasibility] = statuses.get(feasibility, 0) + 1
-        service_stats = services.setdefault(service, {"quotes": 0, "simulated_final_total": 0.0, "material_shortages": 0})
+        scenario = build_quote_scenario(row, rng)
+        scenarios.append(scenario)
+        times.append(scenario.minutes)
+        prices.append(scenario.final_price)
+        direct_costs.append(scenario.direct_cost)
+        contributions.append(scenario.contribution)
+        statuses[scenario.feasibility] = statuses.get(scenario.feasibility, 0) + 1
+        service_stats = services.setdefault(scenario.service, {"quotes": 0, "simulated_final_total": 0.0, "material_shortages": 0})
         service_stats["quotes"] = int(service_stats["quotes"]) + 1
-        service_stats["simulated_final_total"] = float(service_stats["simulated_final_total"]) + final_price
-        service_stats["material_shortages"] = int(service_stats["material_shortages"]) + int(shortage > 0)
+        service_stats["simulated_final_total"] = float(service_stats["simulated_final_total"]) + scenario.final_price
+        service_stats["material_shortages"] = int(service_stats["material_shortages"]) + int(
+            scenario.row["material_status"] == "FALTANTE_EN_ESCENARIO"
+        )
+
+    generated = [scenario.row for scenario in scenarios]
 
     fieldnames = list(generated[0])
     with OUTPUT_CSV.open("w", newline="", encoding="utf-8") as output_file:
@@ -132,7 +176,7 @@ def main() -> None:
         for materials in MATERIALS.values():
             for material in materials:
                 writer.writerow({
-                    "service_type": "Tapizado de moto" if material["weight"] == "NO_APLICA" else ("Carpas" if material["name"].startswith("Lino") else "Toldos"),
+                    "service_type": service_name_for_material(material),
                     "material_name": material["name"],
                     "material_variant": material["weight"],
                     "stock_quantity": f"{float(material['stock']):.2f}",
@@ -147,7 +191,7 @@ def main() -> None:
         for service, materials in MATERIALS.items():
             for material in materials:
                 writer.writerow({
-                    "service_type": "Tapizado de moto" if service == "Tapizado" else service,
+                    "service_type": MOTORCYCLE_SERVICE_NAME if service == "Tapizado" else service,
                     "material_name": material["name"],
                     "material_variant": material["weight"],
                     "rate_per_m2": f"{float(material['rate']):.2f}",
@@ -173,7 +217,7 @@ def main() -> None:
         "inventory": [item for materials in MATERIALS.values() for item in materials],
         "price_rules": [
             {
-                "service": ("Tapizado de moto" if service == "Tapizado" else service) + " · " + material["name"],
+                "service": (MOTORCYCLE_SERVICE_NAME if service == "Tapizado" else service) + " · " + material["name"],
                 "rate": material["rate"],
                 "rule": "tarifa sintética por m²; carpa cerrada × 1.35 (supuesto no validado)" if service == "Carpas" else "tarifa sintética por m² (supuesto no validado)",
                 "unit": "S/ por " + material["unit"],

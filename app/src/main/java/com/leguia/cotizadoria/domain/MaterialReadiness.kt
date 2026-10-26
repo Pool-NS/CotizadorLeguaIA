@@ -25,15 +25,16 @@ data class MaterialReadinessResult(
 
 /** Stock is never reserved or reduced by this read-only assessment. */
 object MaterialReadinessEvaluator {
+    private const val SYNTHETIC_AREA_UNIT = "m² simulados"
     private data class SyntheticRule(val factor: Double, val unit: String)
 
     private val syntheticRules = mapOf(
-        "lino economico demo" to SyntheticRule(1.12, "m² simulados"),
-        "lino liviano demo" to SyntheticRule(1.12, "m² simulados"),
-        "lino pesado demo" to SyntheticRule(1.12, "m² simulados"),
-        "tarflex demo" to SyntheticRule(1.10, "m² simulados"),
-        "lona orillo azul demo" to SyntheticRule(1.10, "m² simulados"),
-        "lona orillo rojo demo" to SyntheticRule(1.10, "m² simulados"),
+        "lino economico demo" to SyntheticRule(1.12, SYNTHETIC_AREA_UNIT),
+        "lino liviano demo" to SyntheticRule(1.12, SYNTHETIC_AREA_UNIT),
+        "lino pesado demo" to SyntheticRule(1.12, SYNTHETIC_AREA_UNIT),
+        "tarflex demo" to SyntheticRule(1.10, SYNTHETIC_AREA_UNIT),
+        "lona orillo azul demo" to SyntheticRule(1.10, SYNTHETIC_AREA_UNIT),
+        "lona orillo rojo demo" to SyntheticRule(1.10, SYNTHETIC_AREA_UNIT),
         "oxford demo" to SyntheticRule(0.55, "m² equivalentes DEMO")
     )
 

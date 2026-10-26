@@ -23,6 +23,8 @@ jacoco {
 }
 
 tasks.register<JacocoReport>("testDebugUnitTestCoverage") {
+    group = "verification"
+    description = "Generates the JaCoCo coverage report for debug unit tests."
     dependsOn("testDebugUnitTest")
     executionData.setFrom(fileTree(layout.buildDirectory) {
         include("jacoco/testDebugUnitTest.exec")
@@ -60,7 +62,7 @@ android {
             buildConfigField("String", "AI_BACKEND_URL", "\"${debugAiBackendUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             buildConfigField("String", "AI_BACKEND_URL", "\"${releaseAiBackendUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
