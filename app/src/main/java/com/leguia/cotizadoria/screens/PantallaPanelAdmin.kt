@@ -145,7 +145,7 @@ private fun weeklyQuoteCounts(quotes: List<CotizacionEntity>): List<Pair<String,
     today.set(Calendar.SECOND, 0)
     today.set(Calendar.MILLISECOND, 0)
     val dateKey = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
-    val weekday = SimpleDateFormat("EEEEE", Locale("es", "PE"))
+    val weekday = SimpleDateFormat("EEEEE", Locale.forLanguageTag("es-PE"))
     return (6 downTo 0).map { offset ->
         val date = today.clone() as Calendar
         date.add(Calendar.DAY_OF_YEAR, -offset)

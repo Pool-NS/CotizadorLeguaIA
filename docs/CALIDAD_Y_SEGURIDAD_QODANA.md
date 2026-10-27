@@ -28,6 +28,8 @@ Este documento registra la respuesta del proyecto a las observaciones de Qodana 
 
 Qodana/Sonar pueden presentar la excepción HTTP de `debug` y el uso de PRNG en los generadores de datos sintéticos como *security hotspots*. El PRNG conserva una semilla fija para que el dataset sea reproducible; no se usa para secretos ni autenticación. Revisa y marca el hotspot como revisado con esta justificación en la interfaz del análisis; no cambies a aleatoriedad criptográfica ni alteres la semilla para forzar una nota.
 
+SonarQube for IDE también puede incluir `.gradle/8.9/dependencies-accessors/**/sources/LibrariesForLibsInPluginsBlock.java` cuando se analiza toda la raíz del proyecto. Es código generado por Gradle, no código fuente mantenido; no lo edites. En modo independiente, agrega `.gradle/**` en **Settings > Tools > SonarQube for IDE > File Exclusions**. En modo Connected, las exclusiones locales no se aplican; el análisis del servidor debe limitar el alcance al código fuente y excluir solo cachés/artefactos generados, sin excluir carpetas de la aplicación.
+
 Las alertas de complejidad cognitiva en `MainActivity`, formulario, login, resumen y tarifas requieren refactorizaciones graduales con revisión funcional. La eliminación de una alerta por bajar el umbral o excluir archivos no constituye una mejora de calidad.
 
 ## Criterio de cierre
