@@ -1,6 +1,6 @@
 package com.leguia.cotizadoria.ai
 
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.IOException
@@ -8,9 +8,12 @@ import java.net.HttpURLConnection
 import java.net.URI
 
 /** Calls the private project backend; provider credentials never enter the Android app. */
-class BackendGenerativeAiClient(private val baseUrl: String) : GenerativeAiClient {
+class BackendGenerativeAiClient(
+    private val baseUrl: String,
+    private val ioDispatcher: CoroutineDispatcher
+) : GenerativeAiClient {
     override suspend fun interpret(requirement: String): Result<RequirementInterpretation> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             runCatching {
                 require(requirement.isNotBlank()) { "Escribe o dicta un requerimiento." }
                 require(baseUrl.isNotBlank()) { "Configura la URL del backend de IA." }

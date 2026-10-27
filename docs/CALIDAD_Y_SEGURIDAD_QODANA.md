@@ -6,7 +6,7 @@ Este documento registra la respuesta del proyecto a las observaciones de Qodana 
 
 ## Decisiones de seguridad
 
-- La variante `debug` permite HTTP para conectar el emulador o una red local al backend de desarrollo. Esta configuración se encuentra en `app/src/debug/AndroidManifest.xml`; el manifiesto principal no habilita tráfico sin cifrar. La compilación `release` exige una URL `https://` mediante `aiBackendUrlRelease`.
+- El manifiesto principal declara `android:usesCleartextTraffic="false"` y usa `network_security_config.xml` con HTTP desactivado. Solo `debug` agrega una excepción de texto claro para `10.0.2.2`, el alias del emulador Android hacia el host; Release y teléfonos físicos requieren HTTPS. Esta excepción de desarrollo debe revisarse como hotspot, no ampliarse a todos los dominios.
 - Las copias de seguridad Android permanecen deshabilitadas con `android:allowBackup="false"`. Las reglas XML están vacías para no incluir datos personales, cotizaciones, credenciales ni preferencias si en el futuro cambia esa política.
 - La compilación `release` activa R8 (`isMinifyEnabled = true`) y usa las reglas ProGuard del módulo. El artefacto de producción debe compilarse y probarse en un dispositivo antes de distribuirse.
 - Las claves de Gemini, Sonar/Qodana, GitLab y otros servicios son secretos. Deben residir en el almacén de secretos del proveedor o en archivos locales ignorados por Git; si se compartieron públicamente, se revocan y se rotan.
@@ -21,10 +21,12 @@ Este documento registra la respuesta del proyecto a las observaciones de Qodana 
 - Se documentaron respuestas HTTP del endpoint y se simplificó el mapeo de errores del proveedor.
 - Se activó minificación de `release` y se describió la tarea de cobertura JaCoCo.
 - Los generadores de datos usan aleatoriedad reproducible porque producen demostraciones sintéticas; no generan contraseñas, tokens, claves ni valores criptográficos.
+- Se inyectó el dispatcher de IO en el cliente HTTP, se agrupó el formulario de tarifa en un objeto para reducir parámetros y se descompuso el generador del dashboard para bajar complejidad cognitiva sin cambiar la semilla ni las filas producidas.
+- La prueba de configuración sin clave crea el objeto de solicitud fuera de `assertRaises`, dejando dentro del bloque solo la operación que se espera que lance la excepción.
 
 ## Interpretación de los hallazgos restantes
 
-Qodana puede presentar tráfico HTTP de `debug`, copias de seguridad y uso de PRNG como *security hotspots*. Se deben revisar en la interfaz del análisis y dejar constancia de la justificación anterior; no se debe ocultar una alerta con supresiones sin revisar su contexto.
+Qodana/Sonar pueden presentar la excepción HTTP de `debug` y el uso de PRNG en los generadores de datos sintéticos como *security hotspots*. El PRNG conserva una semilla fija para que el dataset sea reproducible; no se usa para secretos ni autenticación. Revisa y marca el hotspot como revisado con esta justificación en la interfaz del análisis; no cambies a aleatoriedad criptográfica ni alteres la semilla para forzar una nota.
 
 Las alertas de complejidad cognitiva en `MainActivity`, formulario, login, resumen y tarifas requieren refactorizaciones graduales con revisión funcional. La eliminación de una alerta por bajar el umbral o excluir archivos no constituye una mejora de calidad.
 

@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 
 import com.leguia.cotizadoria.data.AppDatabase
 import com.leguia.cotizadoria.ai.BackendGenerativeAiClient
+import kotlinx.coroutines.Dispatchers
 import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.ParametroPrecioEntity
 import com.leguia.cotizadoria.data.ServicioEntity
@@ -71,7 +72,10 @@ class MainActivity : ComponentActivity() {
             inventarioDao = db.inventarioDao(),
             prediccionDao = db.prediccionDao()
         )
-        val viewModel = CotizadorViewModel(repository, BackendGenerativeAiClient(BuildConfig.AI_BACKEND_URL))
+        val viewModel = CotizadorViewModel(
+            repository,
+            BackendGenerativeAiClient(BuildConfig.AI_BACKEND_URL, Dispatchers.IO)
+        )
         val syntheticDemoData = SyntheticDemoDataLoader.load(applicationContext)
 
         setContent {

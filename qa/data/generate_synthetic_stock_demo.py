@@ -130,48 +130,45 @@ def determine_feasibility(requirement_complete: bool, shortage: float, contribut
     return "FACTIBLE_CON_REGLAS_SINTETICAS"
 
 
-def main() -> None:
-    # Seeded randomness is intentional: this script creates reproducible synthetic samples,
-    # never credentials, tokens, or security-sensitive values.
-    rng = random.Random(SEED)
+def read_source_rows() -> list[dict[str, str]]:
     with SOURCE.open(newline="", encoding="utf-8-sig") as source_file:
-        source_rows = list(csv.DictReader(source_file))
-    if len(source_rows) != 200:
-        raise ValueError(f"Expected 200 source rows, found {len(source_rows)}")
+        rows = list(csv.DictReader(source_file))
+    if len(rows) != 200:
+        raise ValueError(f"Expected 200 source rows, found {len(rows)}")
+    return rows
 
-    scenarios: list[QuoteScenario] = []
-    times: list[float] = []
-    prices: list[float] = []
-    direct_costs: list[float] = []
-    contributions: list[float] = []
+
+def build_scenarios(source_rows: list[dict[str, str]], rng: random.Random) -> tuple[list[QuoteScenario], dict, dict]:
+    scenarios = [build_quote_scenario(row, rng) for row in source_rows]
     statuses: dict[str, int] = {}
     services: dict[str, dict[str, float | int]] = {}
-
-    for row in source_rows:
-        scenario = build_quote_scenario(row, rng)
-        scenarios.append(scenario)
-        times.append(scenario.minutes)
-        prices.append(scenario.final_price)
-        direct_costs.append(scenario.direct_cost)
-        contributions.append(scenario.contribution)
+    for scenario in scenarios:
         statuses[scenario.feasibility] = statuses.get(scenario.feasibility, 0) + 1
-        service_stats = services.setdefault(scenario.service, {"quotes": 0, "simulated_final_total": 0.0, "material_shortages": 0})
+        service_stats = services.setdefault(
+            scenario.service,
+            {"quotes": 0, "simulated_final_total": 0.0, "material_shortages": 0},
+        )
         service_stats["quotes"] = int(service_stats["quotes"]) + 1
-        service_stats["simulated_final_total"] = float(service_stats["simulated_final_total"]) + scenario.final_price
+        service_stats["simulated_final_total"] = (
+            float(service_stats["simulated_final_total"]) + scenario.final_price
+        )
         service_stats["material_shortages"] = int(service_stats["material_shortages"]) + int(
             scenario.row["material_status"] == "FALTANTE_EN_ESCENARIO"
         )
+    return scenarios, statuses, services
 
-    generated = [scenario.row for scenario in scenarios]
 
-    fieldnames = list(generated[0])
+def write_quote_scenarios(generated: list[dict[str, str]]) -> None:
     with OUTPUT_CSV.open("w", newline="", encoding="utf-8") as output_file:
-        writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+        writer = csv.DictWriter(output_file, fieldnames=list(generated[0]))
         writer.writeheader()
         writer.writerows(generated)
 
+
+def write_inventory() -> None:
+    fields = ["service_type", "material_name", "material_variant", "stock_quantity", "unit", "synthetic_unit_cost", "simulation_flag"]
     with INVENTORY_CSV.open("w", newline="", encoding="utf-8") as output_file:
-        writer = csv.DictWriter(output_file, fieldnames=["service_type", "material_name", "material_variant", "stock_quantity", "unit", "synthetic_unit_cost", "simulation_flag"])
+        writer = csv.DictWriter(output_file, fieldnames=fields)
         writer.writeheader()
         for materials in MATERIALS.values():
             for material in materials:
@@ -185,8 +182,11 @@ def main() -> None:
                     "simulation_flag": "true",
                 })
 
+
+def write_price_rules() -> None:
+    fields = ["service_type", "material_name", "material_variant", "rate_per_m2", "closed_tent_multiplier", "discount_source", "simulation_flag"]
     with PRICE_CSV.open("w", newline="", encoding="utf-8") as output_file:
-        writer = csv.DictWriter(output_file, fieldnames=["service_type", "material_name", "material_variant", "rate_per_m2", "closed_tent_multiplier", "discount_source", "simulation_flag"])
+        writer = csv.DictWriter(output_file, fieldnames=fields)
         writer.writeheader()
         for service, materials in MATERIALS.items():
             for material in materials:
@@ -200,8 +200,15 @@ def main() -> None:
                     "simulation_flag": "true",
                 })
 
-    summary = {
-        "title": "Demostración sintética de cotizaciones, precios y materiales",
+
+def build_dashboard_summary(source_rows: list[dict[str, str]], scenarios: list[QuoteScenario], statuses: dict, services: dict) -> dict:
+    generated = [scenario.row for scenario in scenarios]
+    times = [scenario.minutes for scenario in scenarios]
+    prices = [scenario.final_price for scenario in scenarios]
+    direct_costs = [scenario.direct_cost for scenario in scenarios]
+    contributions = [scenario.contribution for scenario in scenarios]
+    return {
+        "title": "Demostración sintética de cotizaciones, precios e inventario",
         "synthetic": True,
         "seed": SEED,
         "quote_count": len(generated),
@@ -211,7 +218,7 @@ def main() -> None:
         "mean_simulated_direct_material_cost": round(sum(direct_costs) / len(direct_costs), 2),
         "mean_simulated_contribution_before_labor_overhead": round(sum(contributions) / len(contributions), 2),
         "non_positive_direct_contribution_count": sum(value <= 0 for value in contributions),
-        "conversion_rate_pct": round(100.0 * sum(int(r["converted_to_sale"]) for r in source_rows) / len(source_rows), 2),
+        "conversion_rate_pct": round(100.0 * sum(int(row["converted_to_sale"]) for row in source_rows) / len(source_rows), 2),
         "feasibility_counts": statuses,
         "service_summary": services,
         "inventory": [item for materials in MATERIALS.values() for item in materials],
@@ -227,22 +234,34 @@ def main() -> None:
         ],
         "sample_quotes": [
             {
-                "quote_id": r["quote_id"],
-                "service_type": r["service_type"],
-                "length_m": float(r["length_m"]),
-                "width_m": float(r["width_m"]),
-                "material_name": r["material_name"],
-                "required_material_quantity": float(r["required_material_quantity"]),
-                "stock_snapshot_quantity": float(r["stock_snapshot_quantity"]),
-                "material_shortage_quantity": float(r["material_shortage_quantity"]),
-                "simulated_direct_material_cost": float(r["simulated_direct_material_cost"]),
-                "simulated_final_price": float(r["simulated_final_price"]),
-                "simulated_gross_contribution_before_labor_overhead": float(r["simulated_gross_contribution_before_labor_overhead"]),
-                "synthetic_feasibility_result": r["synthetic_feasibility_result"],
+                "quote_id": row["quote_id"],
+                "service_type": row["service_type"],
+                "length_m": float(row["length_m"]),
+                "width_m": float(row["width_m"]),
+                "material_name": row["material_name"],
+                "required_material_quantity": float(row["required_material_quantity"]),
+                "stock_snapshot_quantity": float(row["stock_snapshot_quantity"]),
+                "material_shortage_quantity": float(row["material_shortage_quantity"]),
+                "simulated_direct_material_cost": float(row["simulated_direct_material_cost"]),
+                "simulated_final_price": float(row["simulated_final_price"]),
+                "simulated_gross_contribution_before_labor_overhead": float(row["simulated_gross_contribution_before_labor_overhead"]),
+                "synthetic_feasibility_result": row["synthetic_feasibility_result"],
             }
-            for r in generated[:8]
+            for row in generated[:8]
         ],
     }
+
+
+def main() -> None:
+    source_rows = read_source_rows()
+    # Seeded randomness is intentional for reproducible synthetic demo data only.
+    rng = random.Random(SEED)
+    scenarios, statuses, services = build_scenarios(source_rows, rng)
+    generated = [scenario.row for scenario in scenarios]
+    write_quote_scenarios(generated)
+    write_inventory()
+    write_price_rules()
+    summary = build_dashboard_summary(source_rows, scenarios, statuses, services)
     SUMMARY_JSON.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     ANDROID_ASSET.parent.mkdir(parents=True, exist_ok=True)
     ANDROID_ASSET.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

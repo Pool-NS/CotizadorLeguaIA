@@ -8,7 +8,7 @@ Desde la raíz del repositorio ejecuta:
 python qa/data/generate_synthetic_stock_demo.py
 ```
 
-El script usa una semilla fija y la base sintética existente para generar exactamente 200 escenarios reproducibles. Produce:
+El script usa un generador pseudoaleatorio con semilla fija para producir exactamente 200 escenarios reproducibles. Esa aleatoriedad solo sirve para simular datos; nunca para credenciales o decisiones de seguridad. Produce:
 
 - `synthetic_quote_stock_pricing_200.csv`: cotizaciones, dimensiones simuladas, tarifa, descuento, costo directo del material, saldo comparado, faltante y clasificación de factibilidad.
 - `synthetic_material_inventory.csv`: saldos y costos unitarios de inventario ficticio.

@@ -183,7 +183,15 @@ private fun TariffRateEditor(
         singleLine = true
     )
     Button(
-        onClick = { submitRate(service, variant, length, width, material, price, onError, onGuardar) },
+        onClick = {
+            submitRate(
+                service,
+                variant,
+                TariffFormInput(length, width, material, price),
+                onError,
+                onGuardar
+            )
+        },
         modifier = Modifier.fillMaxWidth()
     ) { Text("Guardar precio de este tamaño") }
 }
@@ -191,14 +199,16 @@ private fun TariffRateEditor(
 private fun submitRate(
     service: ServicioEntity,
     selectedVariant: String,
-    lengthText: String,
-    widthText: String,
-    materialText: String,
-    priceText: String,
+    form: TariffFormInput,
     onError: (String) -> Unit,
     onGuardar: (Double, Double, String, String, Double) -> Unit
 ) {
-    val input = TariffInput(lengthText.toDecimal(), widthText.toDecimal(), materialText.trim(), priceText.toDecimal())
+    val input = TariffInput(
+        form.length.toDecimal(),
+        form.width.toDecimal(),
+        form.material.trim(),
+        form.price.toDecimal()
+    )
     val validationError = input.validationError()
     if (validationError != null) {
         onError(validationError)
@@ -212,6 +222,13 @@ private fun submitRate(
         input.price!!
     )
 }
+
+private data class TariffFormInput(
+    val length: String,
+    val width: String,
+    val material: String,
+    val price: String
+)
 
 private data class TariffInput(val length: Double?, val width: Double?, val material: String, val price: Double?) {
     fun validationError(): String? = when {

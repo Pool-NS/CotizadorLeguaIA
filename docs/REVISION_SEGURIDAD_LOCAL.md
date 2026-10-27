@@ -11,13 +11,14 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 | Media | Android permitía respaldo automático de los datos privados de la app. | Corregido con `android:allowBackup="false"`; validar el comportamiento en las versiones/dispositivos objetivo. |
 | Media para operación | PIN local no es una identidad de trabajador ni control de acceso multiusuario. | Sigue pendiente. La base Room permanece separada en cada teléfono; se requiere autenticación/autorización de servidor para roles y datos compartidos. |
 | Media | Solicitud libre de cotización puede contener información personal que sería enviada a Gemini. | Pendiente de control técnico de minimización/consentimiento. Instruir no incluir nombre, teléfono, dirección u otros identificadores; la revisión de código no puede garantizar detección de todos los datos personales. |
-| Baja/entorno | Android Debug permite HTTP para conexión a localhost/LAN; Release debe usar HTTPS. | Solo desarrollo. No distribuir APK Debug ni configurar URL Release en HTTP. |
+| Baja/entorno | Android Debug permite HTTP solo para el emulador `10.0.2.2`; Release y teléfonos físicos requieren HTTPS. | Limitado por `debug_network_security_config.xml`; no distribuir APK Debug ni configurar URL Release en HTTP. |
 | Pendiente | SonarQube está configurado, pero no se ejecutó contra instancia/credenciales disponibles. | No hay Quality Gate ni hallazgos de Sonar que reportar. |
 | Informativo | Qodana Community for Android se ejecuta en contenedor en GitHub Actions. | Ejecución #4 del 2026-10-15 para `c6de50d`: completada correctamente. Revisar el artefacto `qodana-report` para valorar los hallazgos; esto no es certificación ni Quality Gate de SonarQube. |
 | Pendiente de corregir en CI | GitHub Actions falla al invocar `./gradlew` porque el bit ejecutable no estaba versionado en Git. | Corregido en esta revisión al marcar `gradlew` como ejecutable; validar en la siguiente ejecución de CI. |
 | Configuración del repositorio | El envío del grafo de dependencias Gradle falla porque Dependency graph está desactivado en GitHub. | Se retiró ese paso del workflow para no fallar por una opción externa del repositorio. Si se desea el grafo en GitHub, habilitarlo en Settings → Code security and analysis y volver a añadir el envío. Dependabot continúa configurado aparte. |
 | Configuración de CodeQL | CodeQL rechazó `build-mode: manual` al incluir Python, cuyo modo admitido es `none`. | Se separó el análisis en una matriz: Java/Kotlin con compilación manual y Python con modo `none`; validar en la siguiente ejecución de CI. |
 | Informativo (Python) | `pip-audit` contra las dependencias fijadas en `backend/api/requirements.txt`. | Ejecutado el 2026-10-15: sin vulnerabilidades conocidas en los paquetes auditados; el resultado se conserva en `qa/security/python_dependencies_pip_audit.json`. Esto no cubre dependencias Android, imagen de Render, configuración ni vulnerabilidades desconocidas. |
+| Actualización 2026-10-26 | Sonar señaló tráfico HTTP y respaldo en manifiestos, dispatcher acoplado, parámetros/complejidad y PRNG reproducible en datos sintéticos. | El manifiesto principal mantiene HTTP deshabilitado y copias de seguridad desactivadas; solo Debug permite HTTP al emulador `10.0.2.2`. Se inyecta el dispatcher, se reduce la aridad de `submitRate`, se extrae lógica del generador y se simplifica el test de excepción. El uso de PRNG en el dataset sintético se conserva y requiere revisión explícita como hotspot seguro/no aplicable a secretos. |
 
 ## Cambios locales de protección del PIN
 
@@ -34,7 +35,7 @@ Fecha: 2026-10-15. Revisión estática del código disponible en este repositori
 2. Verificación local de Android el 2026-10-15: `testDebugUnitTest`, `lintDebug` y `assembleDebug` completaron correctamente. 21 pruebas unitarias pasaron; lint informó 0 errores y 2 avisos (`targetSdk` 35 y Room con Kapt). APK Debug 1.3.0 generado. Esta compilación no prueba comportamiento visual en teléfonos ni firma de distribución.
 3. Qodana CI pasó el 2026-10-15 para la revisión anterior. Esta ejecución local no repite Qodana, CodeQL ni el backend; confirmar los análisis en CI al publicar los cambios.
 4. Ejecutar escaneo de secretos e inventario actualizado de dependencias Android; revisar falsos positivos y remediar hallazgos aplicables.
-5. Ejecutar SonarQube con host/token, guardar versión de servidor, fecha y Quality Gate.
+5. Ejecutar SonarQube con host/token, guardar versión de servidor, fecha y Quality Gate. Esta revisión no contó con una instancia local configurada en `SONAR_HOST_URL` ni con `SONAR_TOKEN`.
 6. Revisión de seguridad del backend público: autenticación, autorización, rate limit, cuota, CORS si aplica, tamaño de solicitud, timeout, errores y retención.
 7. Pentest/DAST autorizado del artefacto de producción y configuración real antes de guardar datos reales o distribuir a trabajadores.
 

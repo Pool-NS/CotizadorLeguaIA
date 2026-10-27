@@ -122,7 +122,7 @@ aiBackendUrl=https://<URL-HTTPS-ACTUAL-DE-NGROK>
 aiBackendUrlRelease=https://<nombre-del-servicio>.onrender.com
 ```
 
-La primera propiedad solo es para la compilación Debug local; si pruebas con emulador Android, su valor habitual es `http://10.0.2.2:8000`. Para la compilación Release se utiliza exclusivamente `aiBackendUrlRelease`, que debe comenzar por `https://`. No pegues la URL con `/v1/interpret`; el cliente agrega esa ruta automáticamente.
+La primera propiedad solo es para la compilación Debug local; el emulador puede usar `http://10.0.2.2:8000` porque la política de red Debug permite HTTP únicamente a esa dirección. En un teléfono físico usa un endpoint HTTPS (por ejemplo, un túnel temporal durante desarrollo). Para Release se utiliza exclusivamente `aiBackendUrlRelease`, que debe comenzar por `https://`. No pegues la URL con `/v1/interpret`; el cliente agrega esa ruta automáticamente.
 
 En Android Studio:
 

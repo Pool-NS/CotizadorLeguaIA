@@ -68,9 +68,10 @@ class InterpretationApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("POST /v1/interpret", result["interpretation"])
 
     async def test_rejects_when_provider_key_is_missing(self) -> None:
+        request = app.InterpretationRequest(requirement="Carpa 3 por 2")
         with patch.dict(os.environ, {"GEMINI_API_KEY": ""}, clear=False):
             with self.assertRaises(HTTPException) as raised:
-                await app.interpret(app.InterpretationRequest(requirement="Carpa 3 por 2"))
+                await app.interpret(request)
         self.assertEqual(503, raised.exception.status_code)
 
     async def test_returns_structured_suggestion_using_gemini_json(self) -> None:
