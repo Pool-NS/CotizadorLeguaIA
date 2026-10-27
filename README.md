@@ -1,3 +1,9 @@
+# Datos:
+Chaupis Leguia Piero Pool
+correo:75177414@continental.edu.pe
+correo personal u opcional;pieropoolc@gmail.com
+
+
 # Cotizador Leguía
 
 Aplicación Android en Kotlin/Compose con persistencia local Room. El repositorio recibido es un prototipo; los cálculos y decisiones comerciales requieren reglas verificadas por Leguía antes del uso operativo.
