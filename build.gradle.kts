@@ -16,6 +16,7 @@ sonar {
         property("sonar.sources", "app/src/main/java")
         property("sonar.tests", "app/src/test/java")
         property("sonar.sourceEncoding", "UTF-8")
+        property("sonar.exclusions", ".gradle/**")
         property("sonar.java.binaries", "app/build/tmp/kotlin-classes/debug")
         property(
             "sonar.coverage.jacoco.xmlReportPaths",

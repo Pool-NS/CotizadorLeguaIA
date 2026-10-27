@@ -30,6 +30,14 @@ Qodana/Sonar pueden presentar la excepción HTTP de `debug` y el uso de PRNG en 
 
 SonarQube for IDE también puede incluir `.gradle/8.9/dependencies-accessors/**/sources/LibrariesForLibsInPluginsBlock.java` cuando se analiza toda la raíz del proyecto. Es código generado por Gradle, no código fuente mantenido; no lo edites. En modo independiente, agrega `.gradle/**` en **Settings > Tools > SonarQube for IDE > File Exclusions**. En modo Connected, las exclusiones locales no se aplican; el análisis del servidor debe limitar el alcance al código fuente y excluir solo cachés/artefactos generados, sin excluir carpetas de la aplicación.
 
+La configuración de SonarScanner del proyecto declara `sonar.sources=app/src/main/java` y excluye explícitamente `.gradle/**`; la exclusión no reduce el alcance de código fuente de la app porque la caché ya está fuera de `sonar.sources`. Esta configuración aplica a los análisis que usen el plugin Gradle o `sonar-project.properties`, no cambia los ajustes de SonarQube for IDE ni los de una instancia remota configurada por separado.
+
+## Diagnóstico de GitHub Actions
+
+El correo de Actions del 26 de octubre de 2026 reportó dos causas independientes: el build Android falló por conflicto entre los atributos `networkSecurityConfig` del manifiesto principal y el de `debug` (corregido con `tools:replace` en el manifiesto `debug`); CodeQL terminó el análisis pero no pudo subir SARIF porque GitHub indica que Code Scanning no está habilitado en el repositorio. El workflow ya declara `security-events: write`; no se debe ocultar el error con `continue-on-error` ni quitar el paso de carga. Un administrador del repositorio debe habilitar Code Scanning en **Settings > Security > Code security and analysis** y mantener el modo avanzado para usar el workflow CodeQL existente. Después, vuelve a ejecutar `Quality and security`.
+
+El fallo del CodeQL Java/Kotlin al compilar está relacionado con el mismo conflicto del manifiesto. El job CodeQL de Python sí analizó los archivos y falló al cargar resultados por la configuración de Code Scanning; el correo no muestra vulnerabilidades detectadas.
+
 Las alertas de complejidad cognitiva en `MainActivity`, formulario, login, resumen y tarifas requieren refactorizaciones graduales con revisión funcional. La eliminación de una alerta por bajar el umbral o excluir archivos no constituye una mejora de calidad.
 
 ## Criterio de cierre
