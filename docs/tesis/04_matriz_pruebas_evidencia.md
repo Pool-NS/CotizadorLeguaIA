@@ -21,7 +21,7 @@
 
 ## Resultado de ejecución local
 
-Resultados de la ejecución local del 19-11-2026, sobre el árbol de trabajo de `codex/tesis-audit` (base `72801f8`; cambios aún sin commit):
+Resultados de la ejecución local del 19-11-2026, sobre la rama `codex/tesis-audit`, implementación `cc07eab`:
 
 - Android `testDebugUnitTest`: **34 pruebas, 0 fallos y 0 errores**, según los XML de Gradle bajo `app/build/test-results/testDebugUnitTest/`.
 - Android `lintDebug`: **BUILD SUCCESSFUL, 0 errores y 32 advertencias**. Las advertencias incluyen nivel de `targetSdk`, dependencias con versiones más recientes disponibles y uso de KAPT donde Room también soporta KSP. No se ocultaron mediante exclusiones.

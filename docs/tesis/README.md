@@ -2,12 +2,12 @@
 
 **Alcance:** auditoría del código de este repositorio y mejoras de instrumentación, interfaz y documentación.  
 **Rama de trabajo:** `codex/tesis-audit`.  
-**Commit base al iniciar:** `72801f8` (`ci: retain CodeQL SARIF without GitHub Code Scanning`).  
+**Commit de implementación auditado:** `cc07eab` (`feat: improve thesis evidence and cotizador UX`).
 **Versión Android observada:** 1.5.0, `versionCode` 8.  
 **Esquema Room observado:** versión 9.  
 **Fecha de auditoría:** 2026-11-19.
 
-El commit indicado es la base de la auditoría. Los archivos de esta rama se modifican durante el trabajo; el commit final solo podrá consignarse después de confirmar esos cambios. No se afirma que el repositorio remoto esté actualizado.
+La rama `codex/tesis-audit` se publicó en GitHub. La evidencia final de esta documentación se actualizará en un commit posterior al de implementación. El commit base antes de la auditoría fue `72801f8`.
 
 ## Documentos
 
