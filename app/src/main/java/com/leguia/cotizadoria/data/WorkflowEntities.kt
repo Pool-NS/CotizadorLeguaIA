@@ -65,6 +65,7 @@ data class StockEntity(
     val materialId: Int,
     val cantidadDisponible: Double,
     val unidad: String,
+    val medidaPresentacion: String? = null,
     val origen: String,
     val actualizadoEn: Long
 )

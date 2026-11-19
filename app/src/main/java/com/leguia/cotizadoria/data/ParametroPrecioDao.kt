@@ -18,6 +18,9 @@ interface ParametroPrecioDao {
     @Query("SELECT * FROM parametro_precio WHERE activo = 1")
     fun obtenerTodosActivos(): Flow< List< ParametroPrecioEntity > >
 
+    @Query("SELECT * FROM parametro_precio ORDER BY servicioId, concepto, id DESC")
+    fun obtenerHistorialCompleto(): Flow<List<ParametroPrecioEntity>>
+
     @Query("UPDATE parametro_precio SET activo = 0 WHERE servicioId = :servicioId AND concepto = :concepto")
     suspend fun desactivarTarifaExacta(servicioId: Int, concepto: String)
 

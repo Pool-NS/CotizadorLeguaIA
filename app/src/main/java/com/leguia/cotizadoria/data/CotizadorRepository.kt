@@ -57,8 +57,11 @@ class CotizadorRepository(
     }
     fun obtenerStock() = inventarioDao.stock()
     fun obtenerStockConMaterial() = inventarioDao.stockConMaterial()
-    suspend fun registrarIngresoMaterial(nombre: String, tipo: String, cantidad: Double, unidad: String, responsable: String) =
-        inventarioDao.registrarIngreso(nombre, tipo, cantidad, unidad, responsable)
+    fun obtenerMovimientosStock() = inventarioDao.movimientosRecientes()
+    suspend fun registrarIngresoMaterial(nombre: String, tipo: String, cantidad: Double, unidad: String, medidaPresentacion: String?, motivo: String, responsable: String) =
+        inventarioDao.registrarIngreso(nombre, tipo, cantidad, unidad, medidaPresentacion, motivo, responsable)
+    suspend fun registrarAjusteStock(nombre: String, cambio: Double, unidad: String, tipoMovimiento: String, motivo: String, responsable: String) =
+        inventarioDao.registrarAjuste(nombre, cambio, unidad, tipoMovimiento, motivo, responsable)
     suspend fun guardarStock(entity: StockEntity) = inventarioDao.guardarStock(entity)
     suspend fun registrarMovimientoStock(entity: MovimientoStockEntity) = inventarioDao.registrarMovimiento(entity)
     suspend fun registrarNecesidadAbastecimiento(entity: NecesidadAbastecimientoEntity) = inventarioDao.registrarNecesidad(entity)
@@ -68,6 +71,7 @@ class CotizadorRepository(
     fun obtenerParametrosPorServicio(servicioId: Int): Flow< List< ParametroPrecioEntity > > =
         parametroPrecioDao.obtenerPorServicio(servicioId)
     fun obtenerTodosLosParametrosActivos() = parametroPrecioDao.obtenerTodosActivos()
+    fun obtenerHistorialTarifas() = parametroPrecioDao.obtenerHistorialCompleto()
     suspend fun guardarTarifaAprobada(servicioId: Int, largo: Double, ancho: Double, variant: String, material: String, precio: Double) =
         parametroPrecioDao.guardarTarifaAprobada(servicioId, DimensionPriceKey.forSize(largo, ancho, variant, material), precio)
 

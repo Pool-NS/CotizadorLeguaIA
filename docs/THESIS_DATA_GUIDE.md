@@ -4,7 +4,7 @@
 
 La tesis compartida plantea un estudio cuantitativo, aplicado y preexperimental de un grupo con medición antes y después de implementar la aplicación (pretest → intervención → posttest). La unidad de análisis es cada solicitud real de cotización atendida en Leguía. Las dimensiones principales de la variable dependiente son tiempo de cotización, exactitud y cumplimiento u oportunidad.
 
-Por ello, la fuente para contrastar las hipótesis debe ser el registro de solicitudes reales observadas en el negocio. El CSV `synthetic_quotes_200.csv` contiene 200 filas simuladas y se conserva para practicar la importación, descriptivos y el flujo de jamovi/SPSS. `synthetic_quote_stock_pricing_200.csv` añade supuestos ficticios de consumo, precios y stock para demostrar el dashboard y los estados de factibilidad. Ninguno es historial de Leguía, ninguno entrena el componente de interpretación y ninguno puede respaldar resultados empíricos ni valores p de la tesis. Consulta [README_STOCK_DEMO.md](../qa/data/README_STOCK_DEMO.md) para ver las limitaciones de esos escenarios.
+Por ello, la fuente para contrastar las hipótesis debe ser el registro de solicitudes reales observadas en el negocio. Los datasets sintéticos y escenarios de inventario/precios simulados se retiraron del repositorio y de la app para evitar confundirlos con evidencia empírica. Registra únicamente observaciones reales y autorizadas en `qa/data/observed_quotes_template.csv`.
 
 ## Cómo levantar los registros
 
@@ -19,7 +19,7 @@ Por ello, la fuente para contrastar las hipótesis debe ser el registro de solic
 
 ## Plantilla del registro observacional
 
-`qa/data/observed_quotes_template.csv` es una plantilla vacía para un registro por solicitud real. Está separada del CSV sintético. Completa `phase` con `PRETEST` o `POSTTEST`; usa `1` para sí y `0` para no. `error_codes` acepta códigos como `E1;E4`; si no hubo errores, déjalo vacío y registra `error_count` como `0`. La duración debe ser coherente con las horas observadas. No reemplaces celdas faltantes con datos inventados.
+`qa/data/observed_quotes_template.csv` es una plantilla vacía para un registro por solicitud real. Completa `phase` con `PRETEST` o `POSTTEST`; usa `1` para sí y `0` para no. `error_codes` acepta códigos como `E1;E4`; si no hubo errores, déjalo vacío y registra `error_count` como `0`. La duración debe ser coherente con las horas observadas. No reemplaces celdas faltantes con datos inventados.
 
 Columnas:
 
@@ -44,7 +44,7 @@ Guarda la base de trabajo en un lugar privado y con acceso autorizado. No subas 
 
 El diseño descrito no plantea un modelo de constructos latentes medidos mediante una encuesta. Sus indicadores son observaciones de eventos: minutos, errores/cotizaciones correctas y cumplimiento sí/no. Por eso, SmartPLS no es la herramienta que se desprende directamente de esta operacionalización. Para el plan descrito, jamovi o SPSS permiten estadística descriptiva y pruebas de comparación pretest-posttest.
 
-El libro [synthetic_quotes_stock_smartpls_demo.xlsx](../qa/data/synthetic_quotes_stock_smartpls_demo.xlsx) contiene `PLS_solo_practica` para comprobar que SmartPLS importe una tabla numérica y `SmartPLS_guia` con sus límites. Las filas son simuladas: no miden constructos de tesis y no sirven para fiabilidad, validez, hipótesis ni resultados del Capítulo IV. SmartPLS informa alfa de Cronbach ≥ 0.70 como criterio usual de consistencia interna, pero el valor depende de indicadores múltiples del instrumento real; no se debe fabricar ni garantizar con 200 filas sintéticas. Consulta la [referencia oficial de umbrales de SmartPLS](https://www.smartpls.com/documentation/functionalities/thresholds/) y confirma con el docente si el modelo de tesis realmente requiere PLS-SEM.
+La matriz operacional actual mide eventos observables (minutos, exactitud/corrección y cumplimiento), no necesariamente constructos latentes de encuesta. No se distribuye Excel sintético para SmartPLS: fabricar respuestas para obtener alfa de Cronbach sería metodológicamente inválido. Si el docente solicita PLS-SEM, valida con él un modelo de constructos e ítems antes de recolectar respuestas reales; calcula la fiabilidad sobre las respuestas sin manipularlas.
 
 - Si las observaciones de ambas fases son independientes, selecciona la prueba según el tipo de indicador y los supuestos: tiempo (t para muestras independientes o Mann–Whitney); proporciones de exactitud y cumplimiento (chi-cuadrado o Fisher cuando corresponda).
 - Solo trates mediciones como pareadas cuando exista una correspondencia válida y verificable de las mismas unidades entre fases; entonces usa pruebas para datos relacionados.

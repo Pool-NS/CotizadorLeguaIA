@@ -2,7 +2,7 @@
 
 ## Estado y alcance
 
-El servicio de `backend/api` solo interpreta solicitudes mediante Gemini. No es la base de datos de la aplicación: las cotizaciones, tarifas e inventario continúan guardándose en Room, localmente en cada instalación Android. El CSV de 200 filas es sintético y sirve para análisis en jamovi/SPSS; no se carga al backend ni representa el historial real de la empresa.
+El servicio de `backend/api` solo interpreta solicitudes mediante Gemini. No es la base de datos de la aplicación: las cotizaciones, tarifas e inventario continúan guardándose en Room, localmente en cada instalación Android. El backend no ingiere datasets ni consolida el historial real de la empresa.
 
 La configuración incluida permite desplegar un **entorno de demostración** público en Render. No se debe presentar como producción segura para uso multiusuario: actualmente el endpoint `/v1/interpret` no implementa autenticación de usuarios, autorización ni límites propios por usuario. Una clave Gemini guardada en Render protege la credencial del proveedor, pero no impide que terceros consuman la cuota llamando al endpoint público. Antes de uso operativo se requiere, como mínimo, autenticación y autorización en servidor, limitación de solicitudes, observabilidad sin datos sensibles, política de retención y una base de datos central con migraciones y respaldos si se compartirán cotizaciones, tarifas o stock.
 

@@ -17,8 +17,7 @@ Abre Panel de Administración. En cada instalación, el jefe debe configurar su 
 ## Qué muestran las métricas y gráficos
 
 - El panel real muestra barras horizontales de cotizaciones pendientes/concretadas/no concretadas y conversión, usando únicamente los registros guardados en ese dispositivo.
-- `Dashboard demo · 200 datos sintéticos` muestra gráficos de barras para resultado de factibilidad y cantidad por servicio. Las tarjetas adicionales resumen tiempo, precio y costos simulados.
-- En la exposición, indica que son registros sintéticos. No los presentes como historial ni evidencia de la empresa.
+- No hay dashboard ni stock de demostración precargado. Usa el conteo real aprobado por el responsable y deja claro que el inventario es local a ese teléfono.
 - Para el modelo metodológico y la definición de métricas, consulta [METODOLOGIA_IA_DEVSECOPS.md](METODOLOGIA_IA_DEVSECOPS.md).
 
 ## Límites que explicar durante la presentación
@@ -27,6 +26,6 @@ Abre Panel de Administración. En cada instalación, el jefe debe configurar su 
 - El precio automático requiere una tarifa aprobada para servicio, material, combinación exacta de largo×ancho y tipo de carpa cuando aplica. No aplica interpolaciones ni estima reglas comerciales no configuradas.
 - Inventario permite registrar ingresos y ver saldos. Todavía no descuenta consumos por producción ni gestiona mínimos, compras, proformas o el flujo de producción completo.
 - Sonar Gradle está configurado, pero la instancia requiere `SONAR_HOST_URL` y `SONAR_TOKEN`; no se ejecutó análisis ni Quality Gate.
-- Las métricas de predicción son sintéticas y no describen resultados del negocio.
-- El módulo Gemini se prueba técnicamente con casos etiquetados separados; el dataset de cotizaciones de 200 filas no sirve como dataset de entrenamiento ni evaluación de interpretación.
+- No hay métricas predictivas en la app.
+- El módulo Gemini se prueba técnicamente con casos etiquetados separados; no se distribuyen filas sintéticas como dataset de entrenamiento ni evaluación de interpretación.
 - Room/SQLite es local a cada instalación. El backend no consolida cotizaciones de trabajadores y el login local del panel no es autenticación multiusuario para producción.

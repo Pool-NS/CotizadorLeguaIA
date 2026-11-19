@@ -17,6 +17,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -25,8 +30,8 @@ import com.leguia.cotizadoria.data.StockMaterialRow
 import com.leguia.cotizadoria.domain.MaterialReadinessEvaluator
 import com.leguia.cotizadoria.domain.MaterialReadinessStatus
 import com.leguia.cotizadoria.components.EncabezadoPantalla
-import com.leguia.cotizadoria.ui.format.formatDecimal
 import com.leguia.cotizadoria.ui.format.formatMoney
+import com.leguia.cotizadoria.ui.format.formatDecimal
 
 @Composable
 fun PantallaResumenPrecio(
@@ -46,7 +51,7 @@ fun PantallaResumenPrecio(
         } else {
             QuoteDetailsCard(cotizacion, servicioNombre)
             QuotePriceCard(cotizacion)
-            MaterialReadinessCard(cotizacion, servicioNombre, stock)
+            MaterialReadinessCard(cotizacion, stock)
             QuoteSaveAction(cotizacion, onFinalizarCotizacion)
         }
     }
@@ -140,6 +145,7 @@ private fun ApprovedPriceCard(cotizacion: CotizacionEntity) {
 
 @Composable
 private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEntity) -> Unit) {
+    var priceCommunicated by rememberSaveable(cotizacion.codigoCotizacion) { mutableStateOf(false) }
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
         Text(
             "Verifica el servicio, el largo, el ancho y el precio antes de guardar.",
@@ -147,19 +153,35 @@ private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEnt
             style = MaterialTheme.typography.bodyMedium
         )
     }
-    Button(onClick = { onSave(cotizacion) }, modifier = Modifier.fillMaxWidth()) {
-        Text(if (cotizacion.estado == "PENDIENTE_PRECIO") "Guardar solicitud pendiente" else "Confirmar y guardar")
+    if (cotizacion.estado != "PENDIENTE_PRECIO") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.material3.Checkbox(checked = priceCommunicated, onCheckedChange = { priceCommunicated = it })
+            Text("Confirmo que comuniqué este precio al cliente.", style = MaterialTheme.typography.bodyMedium)
+        }
+        Text("Si aún no lo comunicaste, guarda sin marcar la casilla. El panel contará esa respuesta como pendiente de comunicación.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    Button(onClick = {
+        onSave(
+            cotizacion.copy(
+                fechaHoraPrecioComunicado = System.currentTimeMillis().takeIf { priceCommunicated },
+                capturaComunicacionCompleta = cotizacion.estado != "PENDIENTE_PRECIO"
+            )
+        )
+    }, modifier = Modifier.fillMaxWidth()) {
+        Text(when {
+            cotizacion.estado == "PENDIENTE_PRECIO" -> "Guardar solicitud pendiente"
+            priceCommunicated -> "Confirmar comunicación y guardar"
+            else -> "Guardar sin confirmar comunicación"
+        })
     }
 }
 
 @Composable
-private fun MaterialReadinessCard(cotizacion: CotizacionEntity, serviceName: String, inventory: List<StockMaterialRow>) {
+private fun MaterialReadinessCard(cotizacion: CotizacionEntity, inventory: List<StockMaterialRow>) {
     val readiness = MaterialReadinessEvaluator.assess(
-        serviceName = serviceName,
         materialName = cotizacion.materialDescripcion,
         lengthM = cotizacion.medidaLargo,
         widthM = cotizacion.medidaAncho,
-        tentType = cotizacion.tipoCarpa,
         inventory = inventory
     )
     Card(Modifier.fillMaxWidth()) {
@@ -169,24 +191,12 @@ private fun MaterialReadinessCard(cotizacion: CotizacionEntity, serviceName: Str
                 MaterialReadinessStatus.MATERIAL_MISSING -> Text("Falta indicar el material para revisar inventario.")
                 MaterialReadinessStatus.STOCK_NOT_REGISTERED -> Text("${readiness.material} no aparece en el inventario. Requiere revisión del responsable.")
                 MaterialReadinessStatus.CONSUMPTION_RULE_REQUIRED -> {
-                    Text("Stock registrado: ${readiness.available?.let(::decimal) ?: "—"} ${readiness.unit.orEmpty()}.")
+                    Text("Stock registrado: ${readiness.available?.let(::formatDecimal) ?: "—"} ${readiness.unit.orEmpty()}.")
                     Text("Falta validar cuánto material consume este servicio y tamaño; no se puede afirmar si alcanza.")
                 }
-                MaterialReadinessStatus.REQUIREMENT_INCOMPLETE -> Text("Completa largo y ancho para evaluar el escenario sintético.")
-                MaterialReadinessStatus.SHORTAGE -> {
-                    Text("Faltante estimado: ${decimal(readiness.shortage ?: 0.0)} ${readiness.unit.orEmpty()}", color = MaterialTheme.colorScheme.error)
-                    Text("Necesario: ${decimal(readiness.required ?: 0.0)} · disponible: ${decimal(readiness.available ?: 0.0)}")
-                }
-                MaterialReadinessStatus.SUFFICIENT_SYNTHETIC_SCENARIO -> {
-                    Text("Material suficiente en el escenario DEMO: ${decimal(readiness.available ?: 0.0)} ${readiness.unit.orEmpty()} disponibles.", color = MaterialTheme.colorScheme.primary)
-                    Text("Consumo estimado de demostración: ${decimal(readiness.required ?: 0.0)} ${readiness.unit.orEmpty()}.")
-                }
+                MaterialReadinessStatus.REQUIREMENT_INCOMPLETE -> Text("Completa el largo y el ancho para revisar el material.")
             }
-            if (readiness.synthetic) {
-                Text("Valores ficticios de demostración. No usar para aceptar pedidos, comprar ni descontar stock.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            } else {
-                Text("La IA interpreta la solicitud; la disponibilidad depende de stock y consumos validados por el negocio. Esta revisión no reserva existencias.", style = MaterialTheme.typography.bodySmall)
-            }
+            Text("El stock mostrado es el saldo registrado. Para confirmar si alcanza, el jefe debe validar el consumo por material y medida. Esta revisión no descuenta ni reserva existencias.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -201,4 +211,3 @@ private fun InfoRow(label: String, value: String) {
 
 private fun formatDimension(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
 private fun money(value: Double): String = formatMoney(value)
-private fun decimal(value: Double): String = formatDecimal(value)

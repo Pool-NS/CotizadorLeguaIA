@@ -31,7 +31,7 @@ El precio heredado estaba fijado en `MainActivity` como largo × ancho × alto �
 3. Versionar cada cambio Room mediante migraciones no destructivas y pruebas.
 4. Persistir estados comerciales con eventos atómicos, proforma y planificación; completar sus pantallas y pruebas.
 5. Incorporar materiales, inventario y simulación sin reserva ni compra automática.
-6. Desarrollar artefactos sintéticos y reportar sus métricas solo como verificación técnica.
+6. Mantener la plantilla observacional vacía hasta recolectar datos reales autorizados; no generar filas sintéticas para la evaluación de tesis.
 7. Ejecutar Gradle, lint, pruebas y análisis estático; anotar explícitamente bloqueos del entorno.
 
 ## Validación inicial
@@ -39,6 +39,8 @@ El precio heredado estaba fijado en `MainActivity` como largo × ancho × alto �
 `gradlew.bat` heredado pasaba un classpath vacío y se corrigió al lanzador estándar. El daemon JDK se ajustó de 21 a 17 porque este entorno tiene JDK 17 (compatible con AGP 8.7.2) y no 21. Se añadió `local.properties` local ignorado por Git para señalar el Android SDK instalado. Resultado final: `gradlew test` exitoso (7/7 unit tests) y `gradlew lint` exitoso con 37 advertencias; informes en `app/build/`. No se ejecutaron pruebas instrumentadas ni migración Room. No se observaron credenciales de API; sí el PIN local original mencionado arriba, ya reemplazado por bloqueo Android. La auditoría no equivale a una evaluación formal de conformidad ISO. Se verificó que ISO publica la edición ISO 9001:2026; referencia oficial: https://www.iso.org/standard/88464.html.
 
 ## Avance posterior
+
+Actualización 2026-11-12: se retiraron del producto y del repositorio los datasets generados de 200 filas y el predictor experimental entrenado con ellos. La pantalla de stock ahora guía el registro de materiales, cantidades y unidades reales; las tarifas ofrecen medidas y nombres de material seleccionables. El resumen no estima suficiencia ni faltante hasta que el taller apruebe recetas de consumo. `test lintDebug assembleDebug` completó correctamente; SonarQube/Qodana y prueba en dispositivo quedan pendientes.
 
 La auditoría anterior registra el estado inicial; el flujo actual solicita largo y ancho sin mostrar altura. El catálogo actual usa `Carpas`, `Toldos` y `Tapizado de moto`. Las carpas guardan tipo abierta/cerrada y, para las cerradas, cantidad de ventanas y puertas. Las tarifas se registran por servicio, tamaño exacto, material y tipo de carpa; si falta la coincidencia aprobada, la cotización queda pendiente. Room v6 agrega la descripción del material a cotización. La verificación instrumentada de las migraciones queda pendiente.
 

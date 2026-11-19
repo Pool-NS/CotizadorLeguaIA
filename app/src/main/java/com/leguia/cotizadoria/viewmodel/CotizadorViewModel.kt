@@ -68,7 +68,13 @@ class CotizadorViewModel(
     val listaStock = repository.obtenerStockConMaterial()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val movimientosStock = repository.obtenerMovimientosStock()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val tarifasActivas = repository.obtenerTodosLosParametrosActivos()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val historialTarifas = repository.obtenerHistorialTarifas()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun guardarTarifaAprobada(servicioId: Int, largo: Double, ancho: Double, variant: String, material: String, precio: Double, onError: (String) -> Unit) {
@@ -78,11 +84,19 @@ class CotizadorViewModel(
         }
     }
 
-    fun registrarIngresoMaterial(nombre: String, tipo: String, cantidad: Double, unidad: String, operador: String, onResult: (String?) -> Unit) {
+    fun registrarIngresoMaterial(nombre: String, tipo: String, cantidad: Double, unidad: String, medidaPresentacion: String?, motivo: String, operador: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
-            runCatching { repository.registrarIngresoMaterial(nombre, tipo, cantidad, unidad, operador) }
+            runCatching { repository.registrarIngresoMaterial(nombre, tipo, cantidad, unidad, medidaPresentacion, motivo, operador) }
                 .onSuccess { onResult(null) }
                 .onFailure { onResult(it.message ?: "No se pudo registrar el ingreso de material.") }
+        }
+    }
+
+    fun registrarAjusteStock(nombre: String, cambio: Double, unidad: String, tipoMovimiento: String, motivo: String, operador: String, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            runCatching { repository.registrarAjusteStock(nombre, cambio, unidad, tipoMovimiento, motivo, operador) }
+                .onSuccess { onResult(null) }
+                .onFailure { onResult(it.message ?: "No se pudo registrar el movimiento.") }
         }
     }
 

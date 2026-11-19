@@ -1,30 +1,33 @@
-# Informe final de calidad (parcial)
+# Informe de calidad (estado parcial)
 
-Fecha de última validación: 2026-10-12. Este reporte diferencia inspección, ejecución y trabajo pendiente. No representa certificación ni conformidad ISO.
+Última verificación local: 2026-11-19. Este documento registra comprobaciones ejecutadas; no afirma certificación ni conformidad ISO.
 
-| Control | Resultado | Evidencia | Estado |
-|---|---|---|---|
-| Auditoría del ZIP y arquitectura | Inspección estática completada | `docs/CURRENT_AUDIT.md` | COMPLETADO |
-| Regla fija heredada y acceso del jefe | Fórmula fija retirada; PIN local configurable por instalación y guardado como hash | `MainActivity.kt`, `PantallaLoginAdmin.kt` | COMPILADO; falta validar operación de inicialización por equipo |
-| Validación de formulario | Requerimiento obligatorio; largo y ancho > 0 obligatorios; no se solicita altura; regreso a selección | `PantallaFormularioServicio.kt` | CAMBIO HECHO; UI test pendiente |
-| Dominio cotización | Calculadora de parámetros, estados e impacto read-only | `domain/`, `PricingWorkflowTest.kt` | 6 unit tests aprobados |
-| Voz y extracción estructurada | Reconocimiento Android; detecta Carpas/Toldos/Tapizado de moto y largo×ancho; revisión humana; sin altura | `MainActivity.kt`, `SpokenRequirementParser.kt`, `SpokenRequirementParserTest.kt` | 7 parser tests dentro de la suite de 15; PASS; dispositivo pendiente |
-| Dashboard administrativo | Conteos comerciales con tarjetas y navegación a tarifas/inventario | `PantallaPanelAdmin.kt` | COMPILADO; prueba de uso pendiente |
-| Tarifas por tamaño, material y variante | El jefe registra tarifa por servicio, largo×ancho, material y tipo de carpa; acentos/mayúsculas se normalizan para buscar la misma tarifa | `PantallaTarifas.kt`, `DimensionPriceKey`, `ParametroPrecioDao.kt`, `MainActivity.kt` | COMPILADO; cargar tarifas comerciales reales antes de cotizar |
-| Materiales e inventario | Registrar ingreso por material/unidad, acumular stock y persistir movimiento en transacción | `PantallaInventario.kt`, `WorkflowDaos.kt` | COMPILADO; no descuenta consumos de producción ni define stock mínimo |
-| Room/proforma/producción/predicción | Migraciones hasta Room v6; 5→6 agrega el material descrito a cotización; UI de proforma/producción/predicción y prueba instrumentada de migración pendientes | `WorkflowEntities.kt`, `WorkflowDaos.kt`, `AppDatabase.kt` | PARCIAL |
-| Dataset sintético | Exactamente 200 filas, IDs únicos SYN-001…SYN-200, todos sintéticos | `qa/data/synthetic_quotes_200.csv`, `qa/data/README_JAMOVI.md` | EJECUTADO/VERIFICADO; Jamovi documentado |
-| Modelo predictivo sintético | Regresión logística, split 140/30/30; test accuracy 0.6667, precision 0.6875, recall 0.6875, F1 0.6875, ROC-AUC 0.6964; accuracy de validación 0.5000; todo sintético | `qa/prediction/metrics.json` | EJECUTADO; solo evidencia técnica sintética |
-| Casos de prueba | Exactamente 200 casos únicos especificados; todos NOT_EXECUTED | `qa/iso29119/test_cases_200.csv` | DOCUMENTADOS; NO EJECUTADOS |
-| Pruebas unitarias Android | Debug y Release: 16 aprobadas por variante; 0 fallidas, 0 errores | `app/build/test-results/testDebugUnitTest/`, `testReleaseUnitTest/` | PASS; 2026-10-12 |
-| Pruebas unitarias backend Gemini | 5 aprobadas con cliente HTTP simulado; sin llamada externa ni clave | `backend/api/tests/test_app.py` | PASS; 2026-10-12 |
-| Room migration/UI instrumentadas | ADB no inició el servidor en el entorno; no hay dispositivo ejecutable | `qa/iso29119/Test_Execution_Report.md` | PENDIENTE |
-| ISO/IEC 25010 / SQuaRE / ISO 9001 / 29119 | Plantillas y evaluación inicial documentadas; evaluación formal incompleta | `qa/` | PARCIAL |
-| SonarQube | Plugin Gradle 7.5.0.8588 y tarea `sonar` registrados; host/token ausentes, análisis no ejecutado | `build.gradle.kts`, `qa/sonarqube/README.md` | CONFIGURADO; GATE PENDIENTE |
-| Identidad visual y versión | Ícono vectorial Leguía, nombre Cotizador Leguía, versión Android 1.1.0 (code 2) | `AndroidManifest.xml`, `res/drawable/ic_launcher_legacy.xml`, `app/build.gradle.kts` | Verificado en APK; no probado en launcher real |
-| APK demostración | `assembleDebug` BUILD SUCCESSFUL; el paquete declara Cotizador Leguía 1.1.0 | `app/build/outputs/apk/debug/app-debug.apk` | GENERADO; no instalado en dispositivo |
-| Compilación | Debug y Release compilaron con `test lintDebug assembleDebug` | `app/build/` | PASS; 2026-10-12 |
-| Lint | BUILD SUCCESSFUL; 5 advertencias y 0 errores | `app/build/reports/lint-results-debug.html` | PASS CON ADVERTENCIAS |
-| Dispositivo / connectedAndroidTest | ADB no pudo iniciar el servidor local | No hay dispositivo configurado | PENDIENTE |
+## Resultado de la verificación
 
-No se afirma que estén completados dashboard integral, pantallas para proforma/producción, generación de proforma desde UI, predicción integrada con Android, migración desde Room v1 ni 200 ejecuciones de pruebas. El PIN del jefe es local a cada instalación: el jefe debe configurarlo antes de entregar cada teléfono; no hay cuentas/roles sincronizados ni una forma de verificar identidad empresarial sin backend. El precio solo coincide por servicio, material, variante de carpa y tamaño exacto largo×ancho; un material no especificado o sin coincidencia aprobada deja la cotización pendiente. Inventario registra ingresos, pero no consumos de producción, compras o mínimos. Las métricas sintéticas no describen a Leguía y no se deben usar como resultados de tesis.
+| Control | Resultado actual | Pendiente |
+|---|---|---|
+| Pruebas unitarias Android | `testDebugUnitTest`: 34 pruebas aprobadas, 0 fallidas y 0 errores | Pruebas UI e instrumentadas en dispositivo/emulador |
+| Compilación Debug | `assembleDebug`: BUILD SUCCESSFUL; APK 1.5.0/code 8 generado | Instalación y recorrido visual manual |
+| Android Lint | `lintDebug`: BUILD SUCCESSFUL, 0 errores y 32 advertencias | Avisos sobre `targetSdk = 35`, AGP/dependencias con versiones recientes y KAPT; no es una evaluación Sonar/Qodana |
+| IA generativa | La app valida el JSON esperado, limita su tamaño y oculta IP/detalles técnicos en errores de red | No se hizo llamada externa a Gemini ni se verificó disponibilidad del backend en Render |
+| Stock | Ingresos, salidas y ajustes con motivo, responsable, fecha, transacción y validación de unidad/saldo | Prueba Room instrumentada; no hay reglas aprobadas para descontar consumo al cotizar |
+| Tarifas | Solo las reglas activas entran al cotizador; el panel consulta historial activo/inactivo | Cargar/revisar precios comerciales con el responsable |
+| Exportación | CSV del periodo seleccionado, sin texto del cliente, operador ni código comercial; fase, exactitud y errores en blanco si no se verificaron | Revisar el archivo exportado y cotejar definiciones con el protocolo |
+| Métricas de tesis | Tiempo de app y comunicación autorreportada; se distingue dato faltante histórico | Exactitud auditada, E1–E9 y comparación pretest/posttest según protocolo |
+| ISO/IEC / SQuaRE | Prácticas y evidencias documentadas como referencias de evaluación | Auditoría formal, evidencia operativa suficiente y certificación si se pretende declarar conformidad |
+| Backend Python | El intento local de `unittest discover` no finalizó ni produjo salida reproducible; no se marca como aprobado | Diagnosticar el entorno local y obtener reporte de pruebas |
+| SonarQube / Qodana / CodeQL remoto | No se ejecutaron en esta verificación local | Ejecutar en el servicio con permisos y configuración habilitados |
+
+## Alcance de medición
+
+La base Room es local a cada teléfono; no consolida el negocio. El tablero aplica periodos 7 días, 30 días y todo el historial, y no presenta gráficos sin registros. Conversión comercial se calcula como concretadas / (concretadas + no concretadas). El tiempo mediano actual mide desde “Nueva cotización” hasta guardar; no reemplaza el cronometraje aprobado. “Precio comunicado” es una confirmación del operador, no evidencia independiente de que el cliente lo recibió. La exactitud no se infiere de ventas o correcciones de IA.
+
+No se fabrican registros para SmartPLS, SPSS o jamovi. `qa/data/observed_quotes_template.csv` permanece como plantilla vacía para observaciones autorizadas; las simulaciones de 200 filas fueron retiradas y no son resultados de campo.
+
+## Artefacto
+
+- Debug: `app/build/outputs/apk/debug/app-debug.apk` (versión 1.5.0, `versionCode` 8).
+- Reporte Lint: `app/build/reports/lint-results-debug.html`.
+- Pruebas unitarias: `app/build/test-results/testDebugUnitTest/`.
+
+La APK Debug es para instalación de prueba y no está firmada para publicación en una tienda.

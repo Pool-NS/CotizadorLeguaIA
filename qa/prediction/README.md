@@ -1,5 +1,3 @@
-# Componente predictivo (evidencia sintética)
+# Predicción
 
-Regenerar dataset y métricas con Instale versiones con `python -m pip install -r backend/model/requirements.txt` y ejecute `python backend/model/generate_and_train.py`. Regresión logística, partición estratificada 70/15/15, semilla fija 742. `metrics.json` informa solo la partición de prueba.
-
-Resultados obtenidos con datos sintéticos para validación técnica del componente predictivo. No corresponden a resultados de campo de Leguía. No son evidencia pretest/posttest ni miden exactitud de cotización. El modelo no decide descuentos, precios, compras ni estados comerciales. La integración Android queda pendiente.
+No hay un modelo predictivo ni resultados de simulación activos en esta carpeta. El predictor y sus artefactos de datos se retiraron del repositorio el 2026-11-12 para evitar presentar métricas generadas como resultados de campo. Consulta `../../docs/PREDICTION.md` antes de diseñar una evaluación futura con datos reales autorizados.

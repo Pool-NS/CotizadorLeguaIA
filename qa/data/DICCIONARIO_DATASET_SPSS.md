@@ -1,31 +1,19 @@
-# Dataset de 200 cotizaciones para SPSS
+# Diccionario de la plantilla de observación
 
-## Archivos
+La plantilla `observed_quotes_template.csv` está vacía intencionalmente. Una fila corresponde a una cotización realmente observada; no es el dataset de 200 ni genera registros automáticamente.
 
-- `synthetic_quotes_200.csv`: los 200 registros en formato CSV.
-- `Importar_dataset_SPSS.sps`: sintaxis de SPSS para importar, etiquetar variables y ejecutar resúmenes iniciales.
-
-En SPSS, abre `Importar_dataset_SPSS.sps` y ejecútalo. Si el repositorio está en otra carpeta, cambia la ruta indicada en `/FILE` por la ruta de `synthetic_quotes_200.csv` en tu equipo.
-
-## Diccionario de variables
-
-| Variable | Tipo | Descripción |
+| Campo | Tipo sugerido | Significado |
 |---|---|---|
-| `quote_id` | Texto | Identificador artificial, de `SYN-001` a `SYN-200`. |
-| `service_type` | Categórica | Servicio simulado: Carpas, Toldos o Tapizado. |
-| `quote_amount` | Numérica | Importe simulado; el dataset no especifica moneda ni tarifa real. |
-| `discount_percentage` | Numérica | Descuento porcentual simulado. |
-| `requirement_complete` | Binaria (0/1) | Indica si el requerimiento se marcó como completo. |
-| `ai_interpretation_reviewed` | Binaria (0/1) | Indicador simulado para practicar análisis; no prueba que Gemini interpretó esa solicitud ni que la revisión ocurrió en producción. |
-| `quotation_time_minutes` | Numérica | Tiempo simulado para preparar una cotización, en minutos. |
-| `days_to_requested_date` | Numérica | Días entre la cotización y la fecha solicitada. |
-| `customer_response_days` | Numérica | Días simulados hasta la respuesta del cliente. |
-| `status` | Categórica | `CONCRETADA` o `NO_CONCRETADA`, asignado por el proceso sintético. |
-| `converted_to_sale` | Binaria (0/1) | Variable objetivo sintética: 1 convertida, 0 no convertida. |
-| `synthetic_flag` | Texto | `true` en todos los registros; marca el origen sintético. |
+| `record_id` | Texto nominal | Código sin información personal. |
+| `phase` | Texto nominal | `PRETEST` o `POSTTEST`, según diseño aprobado. |
+| `observation_date` | Fecha | Día de observación. |
+| `service_type` | Texto nominal | Carpas, Toldos o Tapizado de moto. |
+| `ai_used`, `ai_interpretation_reviewed` | Binaria | 0 = no, 1 = sí; registra solo lo observado. |
+| `start_time`, `final_price_time` | Hora | Horas observadas para reconstruir la duración. |
+| `quotation_time_minutes` | Numérica continua | Minutos entre inicio y comunicación del precio final. |
+| `quote_correct` | Binaria | 1 = correcta según los criterios aprobados; 0 = no correcta. |
+| `error_count`, `error_codes` | Numérico y texto | Cantidad/códigos de error definidos en el instrumento. |
+| `final_price_communicated_same_visit` | Binaria | 1 = comunicado durante la misma atención; 0 = no. |
+| `exclusion_reason` | Texto | Motivo documentado de exclusión; vacío si se incluye. |
 
-## Limitaciones para el informe
-
-Los 200 registros fueron generados artificialmente con una semilla fija. No son ventas observadas de Leguía ni una muestra representativa de clientes reales. Los análisis y métricas calculados con ellos sirven para demostrar el flujo de importación y análisis en SPSS, no para afirmar desempeño real, causalidad ni precisión operativa. Para validar el modelo se necesitarán datos reales, autorizados, anonimizados y con definiciones aprobadas por el negocio y el docente.
-
-Los valores de importe y descuento son unidades simuladas; no deben presentarse como precios vigentes. La variable `ai_interpretation_reviewed` es únicamente un campo de demostración y no evidencia que la app integre IA generativa.
+No importes columnas de respuesta Likert ni calcules alfa de Cronbach con esta plantilla: la matriz actual es observacional. Si el docente solicita SmartPLS, valida primero un instrumento de constructos e ítems antes de recolectar esa clase de datos.

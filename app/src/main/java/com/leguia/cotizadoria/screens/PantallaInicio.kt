@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -36,12 +38,13 @@ fun PantallaInicio(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_legacy),
                     contentDescription = stringResource(R.string.app_name),
@@ -49,7 +52,7 @@ fun PantallaInicio(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("LEGUÍA", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
                 Text(stringResource(R.string.app_tagline), style = MaterialTheme.typography.bodyMedium)
                 Text(
                     stringResource(R.string.app_version_label, versionNombre),
@@ -58,43 +61,31 @@ fun PantallaInicio(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Operador actual: $operadorSeleccionado",
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = if (esModoOffline) "Modo Offline" else "Modo Online")
-            Switch(
-                checked = esModoOffline,
-                onCheckedChange = { onAlternarModoRed(it) }
-            )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Atención", style = MaterialTheme.typography.titleMedium)
+                Text("Operador: $operadorSeleccionado", style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.weight(1f)) {
+                        Text(if (esModoOffline) "Modo sin conexión" else "Modo conectado", style = MaterialTheme.typography.titleSmall)
+                        Text(if (esModoOffline) "Registro local; interpretación manual." else "La IA requiere acceso al backend.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(checked = esModoOffline, onCheckedChange = onAlternarModoRed)
+                }
+            }
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = onIniciarNuevaCotizacion,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Iniciar Nueva Cotización")
+        Button(onClick = onIniciarNuevaCotizacion, modifier = Modifier.fillMaxWidth()) {
+            Text("＋  Nueva cotización")
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-            onClick = onIrAPanelAdmin,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Panel de Administración")
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Gestión del negocio", style = MaterialTheme.typography.titleMedium)
+                Text("Solicitudes, reportes, inventario y tarifas están disponibles para el responsable.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedButton(onClick = onIrAPanelAdmin, modifier = Modifier.fillMaxWidth()) {
+                    Text("Abrir panel del responsable")
+                }
+            }
         }
+        Text("Los registros se almacenan en este dispositivo.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

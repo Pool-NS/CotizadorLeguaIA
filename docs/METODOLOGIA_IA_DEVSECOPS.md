@@ -2,7 +2,7 @@
 
 ## Propósito y alcance
 
-Este documento explica el prototipo Cotizador Leguía para la presentación académica. La aplicación implementa captura de requerimientos por voz/texto, una propuesta generativa opcional, revisión humana, cálculo determinista de tarifa y un panel de demostración de inventario. No afirma certificación ISO, seguridad absoluta, ni resultados empíricos de Leguía a partir de registros sintéticos.
+Este documento explica el prototipo Cotizador Leguía para la presentación académica. La aplicación implementa captura de requerimientos por voz/texto, una propuesta generativa opcional, revisión humana, cálculo determinista de tarifa y registro manual de inventario. No afirma certificación ISO ni seguridad absoluta.
 
 ## Enfoque metodológico de ingeniería
 
@@ -32,7 +32,7 @@ flowchart LR
     R[Reglas deterministas: tarifa aprobada]
     I[Inventario local: saldos registrados]
     DB[(Room / SQLite en cada teléfono)]
-    D[Dashboard: datos guardados o demo sintético]
+    D[Dashboard: datos guardados localmente]
     CI[CI DevSecOps: pruebas, lint y análisis configurado]
 
     U --> A
@@ -48,7 +48,7 @@ flowchart LR
 
 La IA generativa interpreta el texto y propone servicio, medidas y atributos expresamente mencionados; la persona corrige y confirma. No calcula precios ni decide si una cotización es óptima. La tarifa se obtiene de una regla aprobada que coincida con servicio, medida, material y variante configurada. Si no hay coincidencia, el flujo debe informar precio pendiente.
 
-Room/SQLite guarda datos en el propio dispositivo. El backend FastAPI llama al proveedor de IA y actualmente no almacena cotizaciones ni sincroniza trabajadores. El dashboard del dispositivo resume los datos locales; el dashboard de demostración carga escenarios sintéticos. La demostración de faltantes aplica cantidades ficticias, no una receta de producción aprobada por la empresa.
+Room/SQLite guarda datos en el propio dispositivo. El backend FastAPI llama al proveedor de IA y actualmente no almacena cotizaciones ni sincroniza trabajadores. El dashboard del dispositivo resume únicamente registros locales. El inventario enseña el saldo que ingresó el usuario; no calcula faltantes ni suficiencia mientras el taller no apruebe recetas de consumo.
 
 ## Evaluación técnica de IA
 
@@ -60,21 +60,20 @@ La capacidad implementada es extracción de campos mediante un modelo generativo
 - proporción de propuestas aceptadas/corregidas por la persona;
 - latencia y disponibilidad del backend, identificando proveedor/modelo y fecha.
 
-El CSV sintético de 200 filas mide escenarios de cotización/stock simulados; no mide la precisión de Gemini y no es una muestra histórica real. No se deben mezclar esas métricas con resultados observacionales pretest/posttest.
+La interpretación generativa se evalúa por separado con frases y respuestas esperadas revisadas por personas expertas. No se deben fabricar resultados ni mezclar comprobaciones técnicas con observaciones pretest/posttest.
 
 ## Métricas y gráficos del dashboard
 
-El panel del jefe presenta tarjetas de cantidad solicitada, pendientes, concretadas, no concretadas, valor cotizado y conversión cerrada, además de barras horizontales de estados y conversión calculadas con las cotizaciones guardadas en ese teléfono. El dashboard de demostración de 200 filas presenta tarjetas de tiempo medio, precio medio/total, costos directos y aporte bruto estimado, y gráficos de barras de factibilidad y cantidad por servicio.
+El panel del jefe presenta tarjetas de solicitudes, pendientes, concretadas, valor cotizado y conversión, además de gráficos calculados solo con cotizaciones guardadas en ese teléfono. No se incluye tablero ni cifras sintéticas.
 
 | Indicador | Definición en la app/demo | Interpretación |
 |---|---|---|
-| Conversión cerrada | Concretadas / (concretadas + no concretadas) × 100 | Excluye pendientes; datos locales en el panel real y simulados en demo |
-| Tiempo medio | Promedio de minutos del dataset sintético | Ejercicio de análisis, no tiempo observado de Leguía |
-| Factibilidad | Conteo de suficiente, faltante, incompleto o revisar aporte | Reglas/stock sintéticos de demo; no decisión automática operativa |
-| Cotizaciones por servicio | Conteo por categoría | Distribución sintética en demo |
-| Aporte directo | Precio simulado menos material directo simulado | Excluye mano de obra, indirectos, impuestos y otros costos |
+| Conversión cerrada | Concretadas / (concretadas + no concretadas) × 100 | Excluye pendientes; solo datos locales de este dispositivo |
+| Tiempo de cotización | Tiempo registrado en cotizaciones locales, si se captura | Métrica operativa local; requiere revisar integridad y alcance antes de usar en tesis |
+| Factibilidad de material | No se calcula disponibilidad suficiente | Requiere receta de consumo real validada por el taller |
+| Cotizaciones por servicio | Conteo por categoría desde historial local | No representa todos los teléfonos ni una muestra de investigación por sí mismo |
 
-Para el Capítulo IV, los gráficos deben salir del dataset observado y conservar la separación pretest/posttest. El demo de 200 filas solo sirve para verificar que el dashboard y la importación funcionan. SmartPLS/alfa de Cronbach no se deducen de estas barras ni del dataset de eventos; se requiere un instrumento de medición aprobado si se va a estudiar consistencia interna.
+Para el Capítulo IV, las tablas y gráficos deben salir de observaciones reales y conservar la separación pretest/posttest. SmartPLS/alfa de Cronbach no se deducen del dashboard operativo ni de los registros de eventos; se requiere un instrumento aprobado si se va a estudiar consistencia interna.
 
 La propuesta indicador-por-indicador y la justificación de boxplots, run charts, intervalos de confianza, Pareto y heatmaps está en [METRICAS_APP_TESIS.md](METRICAS_APP_TESIS.md). No se agregan métricas DAU/retención por no estar en los objetivos/variables descritos.
 

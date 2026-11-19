@@ -7,7 +7,7 @@
 | Revisión IA | IA sugiere, humano decide | Interpretar requerimiento | Android → FastAPI → Gemini; Room guarda evidencia local | 5 pruebas unitarias simuladas; prueba con API/dispositivo pendiente | correcciones humanas pendientes | `backend/api/app.py`, `BackendGenerativeAiClient.kt` | Integrada; servicio requiere clave y URL configuradas
 | Estado comercial | Mantener resultado trazable | Concretar/no concretar | `QuoteWorkflow`; Room pendiente | TC-091…TC-115 no ejecutados | tasa de conversión futura | `domain/QuoteWorkflow.kt` | Lógica aislada
 | Proforma/producción/materiales | Continuidad operativa | Venta a trabajo | Sin entidades nuevas persistidas | TC-116…TC-175 no ejecutados | no calculado | Diseño en `docs/DATA_MODEL.md` | Pendiente
-| Predictor | Estimar conversión en sintéticos | Evaluación offline | pipeline sklearn sintético | script ejecutado, no test Android | métricas de test sintético | `qa/prediction/metrics.json` | Técnico sintético
+| Predictor | No forma parte del alcance implementado | No hay evaluación predictiva | No hay modelo conectado | No aplica | No reportar métricas predictivas | `docs/PREDICTION.md` | No implementado
 | Calidad del software | Evaluación objetiva | Revisión/ejecución | Documentación y configuración | QA pendiente | no determinado | `qa/FINAL_QUALITY_REPORT.md` | Parcial
 
-Separación obligatoria: (A) resultados de software: cambios y comandos con evidencia; (B) modelo predictivo: solo los datos sintéticos documentados; (C) resultados experimentales reales de la investigación: no proporcionados ni generados aquí. No inferir mejora del proceso de Leguía a partir de datos sintéticos.
+Separación obligatoria: (A) resultados de software: cambios y comandos con evidencia; (B) no hay modelo predictivo en el producto; (C) resultados experimentales reales de la investigación: se deben recolectar y documentar con autorización. No inferir mejora del proceso de Leguía sin observaciones reales.

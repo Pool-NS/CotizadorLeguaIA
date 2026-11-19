@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,11 +27,11 @@ fun EncabezadoPantalla(
         modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
+        TextButton(
             onClick = onVolver,
-            modifier = Modifier.semantics { contentDescription = "Regresar" }
+            modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Regresar a la pantalla anterior" }
         ) {
-            Text("←", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+            Text("‹  Volver", style = MaterialTheme.typography.labelLarge)
         }
         Column(Modifier.padding(start = 4.dp)) {
             Text(titulo, style = MaterialTheme.typography.titleLarge)

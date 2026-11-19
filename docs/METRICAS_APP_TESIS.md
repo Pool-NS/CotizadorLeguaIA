@@ -4,7 +4,7 @@
 
 La matriz fusionada original y el PDF de tesis no están almacenados en este repositorio. Este diseño provisional se basa en los indicadores descritos en `THESIS_DATA_GUIDE.md` y `qa/study/INSTRUCCIONES_REGISTRO.md`: tiempo de cotización, exactitud, errores E1–E6 y comunicación del precio durante la misma atención. Antes de usarlo como versión final, cotejar nombres, dimensiones, hipótesis, fórmula y escala con la matriz aprobada por el asesor.
 
-No se recomiendan DAU, retención, embudos de registro ni cohortes de usuarios como resultados de tesis: no forman parte de esos indicadores, no hay identidad multiusuario sincronizada y medirlos exigiría recoger datos de uso adicionales. Tampoco se deben combinar observaciones reales con las 200 filas sintéticas.
+No se recomiendan DAU, retención, embudos de registro ni cohortes de usuarios como resultados de tesis: no forman parte de esos indicadores, no hay identidad multiusuario sincronizada y medirlos exigiría recoger datos de uso adicionales. El repositorio no incluye filas sintéticas; analiza solo observaciones reales autorizadas.
 
 ## Métricas y visualizaciones recomendadas
 
@@ -21,15 +21,21 @@ No se recomiendan DAU, retención, embudos de registro ni cohortes de usuarios c
 | Tasa de interpretación correcta de IA (técnica, separada de tesis) | Campos de texto extraídos correctamente frente a una etiqueta de referencia revisada: servicio, largo, ancho, material, tipo, puertas y ventanas. | Heatmap campo × clase/resultado o matriz de confusión por servicio/material; KPI de exact match y precisión/recall por campo. | Una media global esconde fallos en dimensiones concretas. La matriz de confusión distingue errores de clase; evaluar con frases etiquetadas separadas del dataset de cotizaciones. |
 | Corrección humana de propuesta IA (técnica) | Porcentaje de propuestas que la persona modificó antes de confirmar; señal de carga de revisión, no exactitud por sí sola. | Línea de tendencia por versión/modelo y barras apiladas aceptar/corregir/descartar. | La tendencia revela regresiones tras cambios del prompt/modelo; la aceptación no garantiza que la propuesta sea correcta, por lo que se contrasta con etiquetas expertas. |
 | Disponibilidad y latencia del servicio IA (operativa) | Solicitudes válidas respondidas / solicitudes enviadas y tiempo de respuesta p50/p95, con modelo/fecha registrados sin texto del cliente. | Serie temporal de latencia p50/p95 y KPI de disponibilidad; tabla de errores HTTP por clase. | La serie temporal descubre saturación y degradación; p95 representa colas lentas mejor que una media. No constituye efecto de la app en el proceso de cotización. |
-| Factibilidad de stock (solo operación/demo) | Escenarios con material suficiente o faltante según receta aprobada, saldo y demanda comprometida. | Barras horizontales por material/estado; waterfall de saldo inicial − consumos confirmados; semáforo como estado auxiliar. | Por material se requiere comparar cantidades y mostrar faltantes. El waterfall explica el saldo; un indicador de color sin cantidad no es auditable. En el dashboard actual los escenarios de 200 filas son sintéticos y usan saldo inicial repetido, no consumo acumulado real. |
+| Factibilidad de stock (futuro) | Consumo validado contra saldo y demanda comprometida. | Barras horizontales por material y estado; waterfall de saldo inicial menos consumos confirmados. | La app actual muestra saldos registrados y no afirma disponibilidad suficiente porque todavía no tiene recetas validadas. |
 
 ## Indicadores del dashboard actual y brechas
 
-El panel del jefe ya muestra tarjetas y barras horizontales de solicitudes por estado y conversión local al teléfono. El dashboard demo de 200 filas muestra tarjetas de tiempo/precio/costo/aporte directo y barras por resultado de factibilidad y servicio. El segundo es completamente sintético.
+El panel del jefe muestra métricas y gráficos solo de solicitudes guardadas localmente en el teléfono, con filtros Todo, últimos 30 días y últimos 7 días. No contiene dashboard demo ni reportes calculados desde datos inventados.
 
-Todavía no existe un panel analítico pretest/posttest que calcule distribución de duración, proporción correcta, E1–E6, cumplimiento, completitud, intervalos de confianza o segmentación por fase desde una base de investigación real. La plantilla de registro está en `qa/study/registro_pretest_posttest.csv`; no la importe al flujo comercial como si fueran cotizaciones de clientes.
+La app registra el inicio al tocar “Nueva cotización”. En el resumen, el operador puede marcar que comunicó el precio; la hora se guarda solo con esa confirmación. La mediana local se calcula desde el inicio hasta guardar la cotización confirmada. El indicador de oportunidad se calcula sobre solicitudes de precio que ya tienen captura explícita de comunicación; registros anteriores a Room v9 se excluyen porque no se sabe si el dato faltaba o si no se comunicó. Estos datos describen la operación de este teléfono y no certifican que el cliente haya recibido el precio. Deben cotejarse con el instrumento aprobado y el protocolo de observación antes de incluirlos en el Capítulo IV.
 
-El código actual almacena cotizaciones y trazabilidad por teléfono, pero no recoge todos los campos del instrumento de observación (fase, E1–E9, inicio/fin observado). No se deben derivar esos indicadores desde datos incompletos ni atribuir al backend una sincronización que no existe. La instrumentación debe diseñarse una vez que el asesor confirme la matriz y el protocolo de recolección.
+La exactitud continúa sin registrarse en la app porque falta definir con el asesor quién verifica, qué se considera error y cómo se corrige. La aplicación no infiere exactitud a partir de una venta, una corrección de IA o un parámetro cargado. Una evaluación de exactitud debe seguir la ficha aprobada y mantener evidencia de la verificación humana.
+
+El panel permite exportar el periodo filtrado a CSV mediante el selector de archivos Android. El CSV evita el código comercial, texto del cliente y nombre del operador; usa identificadores de fila OBS-001... y exporta modalidad, servicio, tiempo interno medido y confirmación de comunicación. Fase pre/post, exactitud y errores quedan vacíos porque la app no observa esos datos con un instrumento aprobado. No interpretes un vacío como cero ni como ausencia de error. El CSV operativo no sustituye el registro de observación de la tesis.
+
+Todavía no existe un panel analítico pretest/posttest que calcule proporción de cotizaciones correctas, E1–E6, completitud, intervalos de confianza o segmentación por fase desde una base de investigación real. El tablero operativo solo calcula conteos/estados locales, conversión comercial, tiempo mediano medido dentro de la app y confirmación de comunicación. La plantilla de registro está en `qa/study/registro_pretest_posttest.csv`; no la importe al flujo comercial como si fueran cotizaciones de clientes.
+
+El código almacena cotizaciones y trazabilidad por teléfono, pero no recoge todos los campos del instrumento (fase, E1–E9 ni exactitud auditada); el inicio y comunicación son eventos internos de la app y pueden diferir de la observación de tesis. No se deben derivar esos indicadores desde datos incompletos ni atribuir al backend una sincronización que no existe. La instrumentación académica final debe cotejarse con el asesor y protocolo aprobado.
 
 ## Estadística para comparar fases
 
@@ -38,7 +44,7 @@ El gráfico es descriptivo; no contrasta por sí mismo una hipótesis. Si las fa
 ## Reglas visuales del dashboard
 
 - Filtro visible de fase, periodo y servicio solo cuando exista observación real suficiente; mostrar N y faltantes junto a todo gráfico.
-- Separar en pestañas/vistas `Indicadores de tesis`, `Operación real` y `Demo sintético`.
+- Mantener separados los indicadores académicos observados de las métricas operativas locales; mostrar N y faltantes junto a cada gráfico.
 - No usar semáforo/colores para afirmar “cotización óptima” si solo hay una comprobación de saldo o costo directo.
 - No llamar “embudo” a estados que no representan etapas secuenciales con denominadores observados. DAU/retención/cohortes no son constructos de esta investigación.
 - Usar etiquetas y formatos en español, unidades explícitas (min, %, errores por 100 cotizaciones) y fechas locales; conservar las definiciones congeladas en el protocolo.

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.ActivityResult
@@ -18,8 +19,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
@@ -30,13 +33,13 @@ import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.ParametroPrecioEntity
 import com.leguia.cotizadoria.data.ServicioEntity
 import com.leguia.cotizadoria.data.CotizadorRepository
-import com.leguia.cotizadoria.data.SyntheticDemoDataLoader
 import com.leguia.cotizadoria.domain.SpokenRequirementParser
 import com.leguia.cotizadoria.domain.ConfiguredPrice
 import com.leguia.cotizadoria.domain.PriceLine
 import com.leguia.cotizadoria.domain.PricingOutcome
 import com.leguia.cotizadoria.domain.QuotePricingCalculator
 import com.leguia.cotizadoria.domain.DimensionPriceKey
+import com.leguia.cotizadoria.domain.QuoteCsvExport
 import com.leguia.cotizadoria.screens.PantallaFormularioServicio
 import com.leguia.cotizadoria.screens.PantallaInicio
 import com.leguia.cotizadoria.screens.PantallaLoginAdmin
@@ -76,7 +79,6 @@ class MainActivity : ComponentActivity() {
             repository,
             BackendGenerativeAiClient(BuildConfig.AI_BACKEND_URL, Dispatchers.IO)
         )
-        val syntheticDemoData = SyntheticDemoDataLoader.load(applicationContext)
 
         setContent {
             var pantallaActual by remember { mutableStateOf(DestinoPantalla.INICIO) }
@@ -84,6 +86,7 @@ class MainActivity : ComponentActivity() {
             var operadorActual by remember { mutableStateOf("Operador 1") }
             var esModoOffline by remember { mutableStateOf(false) }
             var servicioIdSeleccionado by remember { mutableIntStateOf(1) }
+            var inicioCotizacionMillis by remember { mutableLongStateOf(0L) }
             var transcripcionVozInicial by remember { mutableStateOf<String?>(null) }
             var mensajeVoz by remember { mutableStateOf<String?>(null) }
 
@@ -93,8 +96,37 @@ class MainActivity : ComponentActivity() {
             val listaServicios by viewModel.listaServiciosBaseDatos.collectAsState()
             val listaCotizaciones by viewModel.listaCotizaciones.collectAsState()
             val listaStock by viewModel.listaStock.collectAsState()
+            val movimientosStock by viewModel.movimientosStock.collectAsState()
             val tarifasActivas by viewModel.tarifasActivas.collectAsState()
+            val historialTarifas by viewModel.historialTarifas.collectAsState()
             val aiInterpretationState by viewModel.aiInterpretationState.collectAsState()
+            val screenStateHolder = rememberSaveableStateHolder()
+            var csvPendingExport by remember { mutableStateOf("") }
+            val exportQuotesLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.CreateDocument("text/csv")
+            ) { uri ->
+                if (uri == null) {
+                    Toast.makeText(this@MainActivity, "Exportación cancelada.", Toast.LENGTH_SHORT).show()
+                } else {
+                    runCatching {
+                        contentResolver.openOutputStream(uri)?.use { output ->
+                            output.write(csvPendingExport.toByteArray(Charsets.UTF_8))
+                        } ?: error("No se pudo crear el archivo.")
+                    }.onSuccess {
+                        Toast.makeText(this@MainActivity, "CSV exportado sin nombres ni texto del cliente.", Toast.LENGTH_LONG).show()
+                    }.onFailure {
+                        Toast.makeText(this@MainActivity, "No se pudo guardar el CSV. Inténtalo nuevamente.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+
+            BackHandler(enabled = pantallaActual != DestinoPantalla.INICIO) {
+                pantallaActual = when (pantallaActual) {
+                    DestinoPantalla.INICIO, DestinoPantalla.LOGIN_ADMIN, DestinoPantalla.PANEL_ADMIN, DestinoPantalla.SELECCION_SERVICIO -> DestinoPantalla.INICIO
+                    DestinoPantalla.FORMULARIO_SERVICIO -> DestinoPantalla.SELECCION_SERVICIO
+                    DestinoPantalla.RESUMEN_PRECIO -> DestinoPantalla.FORMULARIO_SERVICIO
+                }
+            }
             val reconocedorLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
             ) { resultado ->
@@ -117,6 +149,10 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
+                    val stateKey = if (pantallaActual == DestinoPantalla.FORMULARIO_SERVICIO) {
+                        "${pantallaActual.name}-$servicioIdSeleccionado"
+                    } else pantallaActual.name
+                    screenStateHolder.SaveableStateProvider(stateKey) {
                     when (pantallaActual) {
                         DestinoPantalla.INICIO -> {
                             PantallaInicio(
@@ -124,7 +160,10 @@ class MainActivity : ComponentActivity() {
                                 operadorSeleccionado = operadorActual,
                                 esModoOffline = esModoOffline,
                                 onAlternarModoRed = { esModoOffline = !esModoOffline },
-                                onIniciarNuevaCotizacion = { pantallaActual = DestinoPantalla.SELECCION_SERVICIO },
+                                onIniciarNuevaCotizacion = {
+                                    inicioCotizacionMillis = System.currentTimeMillis()
+                                    pantallaActual = DestinoPantalla.SELECCION_SERVICIO
+                                },
                                 onIrAPanelAdmin = { pantallaActual = DestinoPantalla.LOGIN_ADMIN }
                             )
                         }
@@ -141,19 +180,30 @@ class MainActivity : ComponentActivity() {
                                 listaCotizaciones = listaCotizaciones,
                                 listaStock = listaStock,
                                 servicios = listaServicios,
-                                tarifas = tarifasActivas,
+                                tarifas = historialTarifas,
+                                movimientosStock = movimientosStock,
                                 onGuardarTarifa = { servicioId, largo, ancho, variante, material, precio ->
                                     viewModel.guardarTarifaAprobada(servicioId, largo, ancho, variante, material, precio) { error ->
                                         Toast.makeText(this@MainActivity, error, Toast.LENGTH_LONG).show()
                                     }
                                 },
-                                onRegistrarIngreso = { nombre, tipo, cantidad, unidad, resultado ->
-                                    viewModel.registrarIngresoMaterial(nombre, tipo, cantidad, unidad, operadorActual, resultado)
+                                onRegistrarIngreso = { nombre, tipo, cantidad, unidad, medida, motivo, resultado ->
+                                    viewModel.registrarIngresoMaterial(nombre, tipo, cantidad, unidad, medida, motivo, operadorActual, resultado)
+                                },
+                                onRegistrarAjusteStock = { nombre, cambio, unidad, tipo, motivo, resultado ->
+                                    viewModel.registrarAjusteStock(nombre, cambio, unidad, tipo, motivo, operadorActual, resultado)
                                 },
                                 onRegistrarResultado = { cotizacion, resultado ->
                                     viewModel.registrarResultadoComercial(cotizacion, operadorActual, resultado)
                                 },
-                                demoData = syntheticDemoData,
+                                onExportarCsv = { quotes ->
+                                    csvPendingExport = QuoteCsvExport.build(
+                                        quotes,
+                                        listaServicios.associate { it.id to it.nombre },
+                                        BuildConfig.VERSION_NAME
+                                    )
+                                    exportQuotesLauncher.launch("cotizaciones_leguia.csv")
+                                },
                                 onVolver = { pantallaActual = DestinoPantalla.INICIO }
                             )
                         }
@@ -191,6 +241,7 @@ class MainActivity : ComponentActivity() {
                                 servicioId = servicioIdSeleccionado,
                                 servicioNombre = listaServicios.firstOrNull { it.id == servicioIdSeleccionado }?.nombre.orEmpty(),
                                 operador = operadorActual,
+                                inicioCotizacionMillis = inicioCotizacionMillis,
                                 esModoOffline = esModoOffline,
                                 transcripcionInicial = transcripcionVozInicial,
                                 interpretacionIA = aiInterpretationState.result,
@@ -216,12 +267,14 @@ class MainActivity : ComponentActivity() {
                                 onFinalizarCotizacion = { quote ->
                                     viewModel.registrarCotizacion(quote) {
                                         cotizacionGenerada = null
+                                        inicioCotizacionMillis = 0L
                                         pantallaActual = DestinoPantalla.INICIO
                                     }
                                 },
                                 onVolver = { pantallaActual = DestinoPantalla.FORMULARIO_SERVICIO }
                             )
                         }
+                    }
                     }
                 }
             }

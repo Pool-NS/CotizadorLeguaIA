@@ -20,13 +20,13 @@ Este documento registra la respuesta del proyecto a las observaciones de Qodana 
 - Se declaró funcional la interfaz de un solo método de IA y se construye la URL del backend mediante `URI`.
 - Se documentaron respuestas HTTP del endpoint y se simplificó el mapeo de errores del proveedor.
 - Se activó minificación de `release` y se describió la tarea de cobertura JaCoCo.
-- Los generadores de datos usan aleatoriedad reproducible porque producen demostraciones sintéticas; no generan contraseñas, tokens, claves ni valores criptográficos.
+- Los generadores de datos sintéticos mencionados en reportes históricos no producían contraseñas, tokens ni valores criptográficos; los generadores y muestras se retiraron el 2026-11-12.
 - Se inyectó el dispatcher de IO en el cliente HTTP, se agrupó el formulario de tarifa en un objeto para reducir parámetros y se descompuso el generador del dashboard para bajar complejidad cognitiva sin cambiar la semilla ni las filas producidas.
 - La prueba de configuración sin clave crea el objeto de solicitud fuera de `assertRaises`, dejando dentro del bloque solo la operación que se espera que lance la excepción.
 
 ## Interpretación de los hallazgos restantes
 
-Qodana/Sonar pueden presentar la excepción HTTP de `debug` y el uso de PRNG en los generadores de datos sintéticos como *security hotspots*. El PRNG conserva una semilla fija para que el dataset sea reproducible; no se usa para secretos ni autenticación. Revisa y marca el hotspot como revisado con esta justificación en la interfaz del análisis; no cambies a aleatoriedad criptográfica ni alteres la semilla para forzar una nota.
+Qodana/Sonar pueden presentar la excepción HTTP de `debug` y, en análisis históricos, el uso de PRNG en el generador de datasets sintéticos como *security hotspots*. Ese generador y sus datasets se retiraron el 2026-11-12; el hotspot antiguo puede seguir apareciendo en reportes de commits anteriores, pero ya no corresponde al código vigente. Revisa y marca hallazgos históricos según el análisis del commit, sin cambiar reglas para forzar una nota.
 
 SonarQube for IDE también puede incluir `.gradle/8.9/dependencies-accessors/**/sources/LibrariesForLibsInPluginsBlock.java` cuando se analiza toda la raíz del proyecto. Es código generado por Gradle, no código fuente mantenido; no lo edites. En modo independiente, agrega `.gradle/**` en **Settings > Tools > SonarQube for IDE > File Exclusions**. En modo Connected, las exclusiones locales no se aplican; el análisis del servidor debe limitar el alcance al código fuente y excluir solo cachés/artefactos generados, sin excluir carpetas de la aplicación.
 

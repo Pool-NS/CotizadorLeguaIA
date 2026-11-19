@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +44,7 @@ fun PantallaFormularioServicio(
     servicioId: Int,
     servicioNombre: String,
     operador: String,
+    inicioCotizacionMillis: Long,
     esModoOffline: Boolean,
     transcripcionInicial: String?,
     interpretacionIA: RequirementInterpretation?,
@@ -55,18 +57,18 @@ fun PantallaFormularioServicio(
     val datosVoz = remember(transcripcionInicial) {
         transcripcionInicial?.let(SpokenRequirementParser::interpret)
     }
-    var requerimiento by remember(transcripcionInicial) { mutableStateOf(transcripcionInicial.orEmpty()) }
-    var medidaLargo by remember(transcripcionInicial) { mutableStateOf(datosVoz?.largo?.toString().orEmpty()) }
-    var medidaAncho by remember(transcripcionInicial) { mutableStateOf(datosVoz?.ancho?.toString().orEmpty()) }
-    var tipoMoto by remember(servicioId) { mutableStateOf("") }
-    var material by remember(servicioId) { mutableStateOf("") }
-    var carpaCerrada by remember(servicioId) { mutableStateOf(false) }
-    var cantidadVentanas by remember(servicioId) { mutableStateOf("") }
-    var cantidadPuertas by remember(servicioId) { mutableStateOf("") }
-    var medidaAlto by remember(servicioId) { mutableStateOf("") }
-    var errorFormulario by remember { mutableStateOf<String?>(null) }
-    var iaAplicada by remember { mutableStateOf(false) }
-    var corregidaPorPersona by remember { mutableStateOf(false) }
+    var requerimiento by rememberSaveable(transcripcionInicial) { mutableStateOf(transcripcionInicial.orEmpty()) }
+    var medidaLargo by rememberSaveable(transcripcionInicial) { mutableStateOf(datosVoz?.largo?.toString().orEmpty()) }
+    var medidaAncho by rememberSaveable(transcripcionInicial) { mutableStateOf(datosVoz?.ancho?.toString().orEmpty()) }
+    var tipoMoto by rememberSaveable(servicioId) { mutableStateOf("") }
+    var material by rememberSaveable(servicioId) { mutableStateOf("") }
+    var carpaCerrada by rememberSaveable(servicioId) { mutableStateOf(false) }
+    var cantidadVentanas by rememberSaveable(servicioId) { mutableStateOf("") }
+    var cantidadPuertas by rememberSaveable(servicioId) { mutableStateOf("") }
+    var medidaAlto by rememberSaveable(servicioId) { mutableStateOf("") }
+    var errorFormulario by rememberSaveable { mutableStateOf<String?>(null) }
+    var iaAplicada by rememberSaveable { mutableStateOf(false) }
+    var corregidaPorPersona by rememberSaveable { mutableStateOf(false) }
     val isCarpas = servicioNombre.equals("Carpas", ignoreCase = true)
     val isMoto = servicioNombre.equals("Tapizado de moto", ignoreCase = true)
     val opcionesMaterial = materialOptions(servicioNombre, isCarpas)
@@ -124,11 +126,19 @@ fun PantallaFormularioServicio(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             OutlinedButton(
                 onClick = { onInterpretarRequerimiento(requerimiento) },
-                enabled = requerimiento.isNotBlank() && !interpretacionIALoading
-            ) { Text(if (interpretacionIALoading) "Interpretando…" else "Interpretar con IA") }
+                enabled = requerimiento.isNotBlank() && !interpretacionIALoading && !esModoOffline
+            ) { Text(when {
+                interpretacionIALoading -> "Interpretando…"
+                errorIA != null -> "Reintentar IA"
+                esModoOffline -> "IA sin conexión"
+                else -> "Interpretar con IA"
+            }) }
             if (interpretacionIALoading) Text("Esperando propuesta")
         }
-        errorIA?.let { Text("IA no disponible: $it. Puedes completar los datos manualmente.", color = Color.Red) }
+        if (esModoOffline) {
+            Text("Modo sin conexión: completa los campos manualmente. La cotización se guardará en este teléfono.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        errorIA?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
         AiInterpretationSummary(interpretacionIA, servicioNombre)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -196,7 +206,8 @@ fun PantallaFormularioServicio(
                     windowsText = cantidadVentanas,
                     doorsText = cantidadPuertas,
                     correctedByPerson = corregidaPorPersona,
-                    interpretation = interpretacionIA
+                    interpretation = interpretacionIA,
+                    startTimeMillis = inicioCotizacionMillis
                 )
                 val error = validateQuoteForm(input)
                 if (error != null) {
@@ -423,7 +434,8 @@ private data class QuoteFormInput(
     val windowsText: String,
     val doorsText: String,
     val correctedByPerson: Boolean,
-    val interpretation: RequirementInterpretation?
+    val interpretation: RequirementInterpretation?,
+    val startTimeMillis: Long
 ) {
     val length: Double? get() = lengthText.toPositiveDecimalOrNull()
     val width: Double? get() = widthText.toPositiveDecimalOrNull()
@@ -472,7 +484,7 @@ private fun QuoteFormInput.toCotizacion(): CotizacionEntity {
         descuentoPorcentaje = 0.0,
         precioFinal = 0.0,
         estado = "PENDIENTE",
-        fechaHoraInicio = now,
+        fechaHoraInicio = startTimeMillis,
         fechaHoraFin = null,
         esModoOffline = offline,
         tipoMoto = motorcycleType.trim().takeIf { isMoto && it.isNotBlank() },

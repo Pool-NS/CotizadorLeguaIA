@@ -12,7 +12,7 @@ La diferencia no consiste en tener más módulos que un ERP. Consiste en especia
 2. **Estructuración asistida por IA:** propone servicio, medidas, material y características desde lenguaje natural. La persona cotizadora revisa y corrige la propuesta; la IA no determina el precio final.
 3. **Cotización configurable:** calcula solo cuando encuentra una tarifa aprobada para la combinación aplicable de servicio, medidas, material y variante. El precio final y los descuentos permanecen bajo decisión humana.
 4. **Continuidad del trabajo:** conserva trazabilidad de la cotización. El modelo ya contempla entidades para proforma y producción, pero los flujos completos de esos módulos requieren validación funcional antes de presentarlos como terminados.
-5. **Análisis anticipado de stock:** existe un dashboard separado con 200 escenarios sintéticos. La comprobación con stock real requiere recetas, inventario y demanda comprometida validados; la demo no reserva stock ni genera compras o producción.
+5. **Inventario operativo básico:** el jefe registra materiales e ingresos reales en el dispositivo. La app muestra el saldo registrado; sin receta de consumo aprobada no afirma que alcance ni descuenta stock.
 6. **Evaluación alineada a la investigación:** el prototipo es la intervención tecnológica; el efecto debe medirse con observaciones pretest y posttest reales mediante el instrumento aprobado. El dashboard de demo aún no es un reporte analítico completo de tiempo, exactitud y oportunidad.
 
 ## Comparación de alcance
@@ -30,9 +30,9 @@ No se afirma que Cotizador Leguía sea mejor que Odoo en términos generales. So
 
 ## Estado verificable del prototipo
 
-El repositorio incluye app Android, almacenamiento Room local, catálogo de tarifas, inventario local, flujo de cotización, interpretación generativa mediante backend FastAPI/Gemini, dashboard demo y artefactos sintéticos. Las tarifas/stock reales aún necesitan aprobación del jefe; el backend no es una base de datos central. El workflow de CI y Qodana pasó en `main` en el commit `056a29f`.
+El repositorio incluye app Android, almacenamiento Room local, catálogo de tarifas, inventario local, flujo de cotización e interpretación generativa mediante backend FastAPI/Gemini. Los artefactos sintéticos y el dashboard de demostración se retiraron. Las tarifas/stock reales aún necesitan aprobación del jefe; el backend no es una base de datos central.
 
-Esto permite presentar un **prototipo funcional para demostración y evaluación técnica**, pero no acredita operación multiusuario ni resultados de eficacia. Los 200 registros de demo son sintéticos; no son historia de Leguía, no entrenan la IA y no se pueden usar como evidencia empírica para contrastar hipótesis.
+Esto permite presentar un **prototipo funcional para demostración y evaluación técnica**, pero no acredita operación multiusuario ni resultados de eficacia.
 
 ## Pendientes para declarar el producto listo para operación
 
@@ -42,10 +42,10 @@ Los siguientes puntos no se resuelven con más código inventado; requieren vali
 - El taller debe validar recetas/consumos por tipo de producto, dimensiones, ventanas, puertas y material. Sin receta, la app debe indicar “requiere revisión”, no “stock suficiente”.
 - La base Room se guarda por instalación. Para que varios trabajadores compartan cotizaciones, precios y stock se necesita backend persistente, autenticación/autorización por rol, sincronización, respaldos y reglas de concurrencia.
 - La clave del proveedor IA debe guardarse en el entorno de servidor y el endpoint público debe limitar abuso, frecuencia y tamaño de solicitud antes de uso compartido.
-- Para el Capítulo IV se requieren observaciones reales y autorizadas en pretest y posttest, con el instrumento y criterios de exactitud aprobados. Los datos sintéticos solo sirven para ensayar importación y gráficos.
-- El dashboard de tesis debe calcular y presentar los indicadores reales completos (distribuciones de duración, exactitud, errores definidos por el instrumento, oportunidad, faltantes y N por fase). Las barras del dashboard demo no sustituyen esos análisis.
+- Para el Capítulo IV se requieren observaciones reales y autorizadas en pretest y posttest, con el instrumento y criterios de exactitud aprobados.
+- El dashboard de tesis debe calcular y presentar los indicadores reales completos (distribuciones de duración, exactitud, errores definidos por el instrumento, oportunidad, faltantes y N por fase); los gráficos operativos locales no sustituyen esos análisis.
 - La medición de calidad no equivale a certificación ISO. El proyecto puede documentar controles y evidencias relacionados con calidad y seguridad, pero cualquier declaración de conformidad o certificación requiere auditoría competente.
-- La predicción del dataset sintético no se debe activar como recomendación comercial. Su evaluación futura necesita datos históricos reales suficientes, revisión de sesgo y validación fuera de muestra.
+- No se incluye predicción comercial. Su evaluación futura necesita datos históricos reales suficientes, revisión de sesgo y validación fuera de muestra.
 - Los módulos de proforma, programación, producción y entrega deben tener pantallas, permisos, transiciones de estado y pruebas integradas antes de afirmarse como un flujo operativo completo.
 
 ## Criterios de aceptación para cerrar el alcance de tesis

@@ -42,6 +42,6 @@ Codifica las variables binarias únicamente con `0` o `1`. Si no se pudo observa
 - `error_count = E1 + E2 + E3 + E4 + E5 + E6`.
 - `quote_correct = 1` cuando `error_count = 0`, de lo contrario `0`.
 - Cumplimiento porcentual por condición: cotizaciones con `price_delivered_during_attention = 1` / cotizaciones observadas × 100.
-- La prueba estadística depende de si pretest y posttest son pares legítimos o grupos independientes y de los supuestos observados. No combines estas observaciones reales con `qa/data/synthetic_quotes_200.csv`.
+- La prueba estadística depende de si pretest y posttest son pares legítimos o grupos independientes y de los supuestos observados. Analiza solo observaciones reales recogidas con autorización; no agregues filas inventadas.
 
 El instrumento de tesis requiere juicio de expertos y aplicación piloto antes de la recolección definitiva. Esta plantilla facilita el registro; no constituye por sí sola validación metodológica ni autorización para recoger datos.

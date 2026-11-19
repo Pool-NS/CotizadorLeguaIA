@@ -14,6 +14,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedButton
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,8 +32,9 @@ import com.leguia.cotizadoria.data.CotizacionEntity
 import com.leguia.cotizadoria.data.ParametroPrecioEntity
 import com.leguia.cotizadoria.data.ServicioEntity
 import com.leguia.cotizadoria.data.StockMaterialRow
-import com.leguia.cotizadoria.data.SyntheticDemoDashboard
+import com.leguia.cotizadoria.data.StockMovementRow
 import com.leguia.cotizadoria.domain.QuoteStatus
+import com.leguia.cotizadoria.domain.calculateQuoteDurationMetrics
 import com.leguia.cotizadoria.ui.format.formatMoney
 import com.leguia.cotizadoria.ui.format.formatPercent
 import java.text.SimpleDateFormat
@@ -44,39 +48,56 @@ fun PantallaPanelAdmin(
     listaStock: List<StockMaterialRow>,
     servicios: List<ServicioEntity>,
     tarifas: List<ParametroPrecioEntity>,
+    movimientosStock: List<StockMovementRow>,
     onGuardarTarifa: (Int, Double, Double, String, String, Double) -> Unit,
-    onRegistrarIngreso: (String, String, Double, String, (String?) -> Unit) -> Unit,
+    onRegistrarIngreso: (String, String, Double, String, String?, String, (String?) -> Unit) -> Unit,
+    onRegistrarAjusteStock: (String, Double, String, String, String, (String?) -> Unit) -> Unit,
     onRegistrarResultado: (CotizacionEntity, QuoteStatus) -> Unit,
-    demoData: SyntheticDemoDashboard,
+    onExportarCsv: (List<CotizacionEntity>) -> Unit,
     onVolver: () -> Unit
 ) {
     var mostrarInventario by remember { mutableStateOf(false) }
     var mostrarTarifas by remember { mutableStateOf(false) }
-    var mostrarDemo by remember { mutableStateOf(false) }
     var mostrarTodo by remember { mutableStateOf(false) }
+    var rangoSeleccionado by remember { mutableStateOf("30 días") }
+    BackHandler(enabled = mostrarTarifas || mostrarInventario) {
+        if (mostrarTarifas) mostrarTarifas = false else mostrarInventario = false
+    }
     if (mostrarTarifas) {
         PantallaTarifas(servicios, tarifas, onGuardarTarifa, onVolver = { mostrarTarifas = false })
         return
     }
     if (mostrarInventario) {
-        PantallaInventario(stock = listaStock, onRegistrarIngreso = onRegistrarIngreso, onVolver = { mostrarInventario = false })
-        return
-    }
-    if (mostrarDemo) {
-        PantallaDemoDashboard(data = demoData, onVolver = { mostrarDemo = false })
+        PantallaInventario(
+            stock = listaStock,
+            movimientos = movimientosStock,
+            onRegistrarIngreso = onRegistrarIngreso,
+            onRegistrarAjuste = onRegistrarAjusteStock,
+            onVolver = { mostrarInventario = false }
+        )
         return
     }
 
-    val pendingCount = listaCotizaciones.count { it.estado == QuoteStatus.PENDIENTE.name || it.estado == "PENDIENTE_PRECIO" }
-    val completedCount = listaCotizaciones.count { it.estado == QuoteStatus.CONCRETADA.name }
-    val notCompletedCount = listaCotizaciones.count { it.estado == QuoteStatus.NO_CONCRETADA.name }
+    val cutoff = when (rangoSeleccionado) {
+        "7 días" -> System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+        "30 días" -> System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+        else -> null
+    }
+    val cotizacionesFiltradas = listaCotizaciones.filter { quote -> cutoff == null || quote.fechaHoraInicio >= cutoff }
+    val pendingCount = cotizacionesFiltradas.count { it.estado == QuoteStatus.PENDIENTE.name || it.estado == "PENDIENTE_PRECIO" }
+    val completedCount = cotizacionesFiltradas.count { it.estado == QuoteStatus.CONCRETADA.name }
+    val notCompletedCount = cotizacionesFiltradas.count { it.estado == QuoteStatus.NO_CONCRETADA.name }
     val resolvedCount = completedCount + notCompletedCount
     val conversionPercent = if (resolvedCount == 0) 0.0 else completedCount * 100.0 / resolvedCount
-    val quotedValue = listaCotizaciones.filter { it.estado != "PENDIENTE_PRECIO" }.sumOf { it.precioFinal }
-    val recentLimit = if (mostrarTodo) listaCotizaciones.size else 8
-    val weekly = weeklyQuoteCounts(listaCotizaciones)
+    val quotedValue = cotizacionesFiltradas.filter { it.estado != "PENDIENTE_PRECIO" }.sumOf { it.precioFinal }
+    val communicationEvaluated = cotizacionesFiltradas.filter { it.capturaComunicacionCompleta && it.estado != "PENDIENTE_PRECIO" }
+    val communicationPercent = if (communicationEvaluated.isEmpty()) null else
+        communicationEvaluated.count { it.fechaHoraPrecioComunicado != null } * 100.0 / communicationEvaluated.size
+    val durationMetrics = calculateQuoteDurationMetrics(cotizacionesFiltradas)
+    val recentLimit = if (mostrarTodo) cotizacionesFiltradas.size else 8
+    val weekly = weeklyQuoteCounts(cotizacionesFiltradas)
     val serviceCounts = servicios.map { service ->
-        service.nombre to listaCotizaciones.count { it.servicioId == service.id }
+        service.nombre to cotizacionesFiltradas.count { it.servicioId == service.id }
     }.filter { it.second > 0 }
 
     LazyColumn(
@@ -90,15 +111,24 @@ fun PantallaPanelAdmin(
                 OutlinedButton(onClick = { mostrarTarifas = true }, modifier = Modifier.weight(1f)) { Text("Tarifas") }
             }
         }
-        item {
-            OutlinedButton(onClick = { mostrarDemo = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("Ver demo de 200 registros")
-            }
-        }
         item { Text("Actividad real guardada localmente", style = MaterialTheme.typography.titleMedium) }
         item {
+            Text("Periodo del panel", style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MetricCard("Solicitudes", listaCotizaciones.size.toString(), Modifier.weight(1f))
+                listOf("7 días", "30 días", "Todo").forEach { option ->
+                    FilterChip(selected = rangoSeleccionado == option, onClick = { rangoSeleccionado = option }, label = { Text(option) })
+                }
+            }
+        }
+        if (cotizacionesFiltradas.isNotEmpty()) item {
+            OutlinedButton(onClick = { onExportarCsv(cotizacionesFiltradas) }, modifier = Modifier.fillMaxWidth()) {
+                Text("Exportar periodo seleccionado · CSV anonimizado")
+            }
+            Text("No incluye cliente, solicitud ni operador. Fase pre/post, exactitud y errores quedan vacíos para completar solo con el protocolo aprobado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricCard("Solicitudes", cotizacionesFiltradas.size.toString(), Modifier.weight(1f))
                 MetricCard("Pendientes", pendingCount.toString(), Modifier.weight(1f))
             }
         }
@@ -108,33 +138,70 @@ fun PantallaPanelAdmin(
                 MetricCard("Conversión", formatPercent(conversionPercent), Modifier.weight(1f))
             }
         }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricCard("Tiempo promedio en app", durationMetrics.averageMillis?.let(::formatDuration) ?: "—", Modifier.weight(1f))
+                MetricCard("Tiempo mediano en app", durationMetrics.medianMillis?.let(::formatDuration) ?: "—", Modifier.weight(1f))
+            }
+            Text(
+                "Tiempo = inicio hasta confirmación del operador de que comunicó el precio; n = ${durationMetrics.sampleCount}. Promedio = suma ÷ n; mediana = valor central o promedio de los dos valores centrales.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricCard("Precio comunicado", communicationPercent?.let(::formatPercent) ?: "—", Modifier.weight(1f))
+                MetricCard("Exactitud auditada", "Sin datos", Modifier.weight(1f))
+            }
+            Text(
+                "Oportunidad confirmada por el operador: ${communicationEvaluated.count { it.fechaHoraPrecioComunicado != null }}/${communicationEvaluated.size}. Fórmula = confirmaciones positivas ÷ capturas completas. Requiere cotejar el instrumento aprobado.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                "Exactitud = cotizaciones correctas verificadas ÷ cotizaciones evaluadas. Falta registrar la auditoría independiente; no se infiere de ventas ni de correcciones de IA.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         item { MetricCard("Valor final registrado", formatMoney(quotedValue), Modifier.fillMaxWidth()) }
         item {
             Text("Estos datos pertenecen a este dispositivo. Sin una base de datos central, los teléfonos no comparten el panel.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        item { GraficoTendenciaSemanal("Cotizaciones · últimos 7 días", weekly.map { it.first }, weekly.map { it.second }) }
-        item {
-            GraficoDona(
-                titulo = "Estado de las solicitudes",
-                valores = listOf("Pendientes" to pendingCount, "Concretadas" to completedCount, "No concretadas" to notCompletedCount)
-            )
+        if (cotizacionesFiltradas.isNotEmpty()) {
+            item { GraficoTendenciaSemanal("Cotizaciones · últimos 7 días", weekly.map { it.first }, weekly.map { it.second }) }
+            item {
+                GraficoDona(
+                    titulo = "Estado de las solicitudes",
+                    valores = listOf("Pendientes" to pendingCount, "Concretadas" to completedCount, "No concretadas" to notCompletedCount)
+                )
+            }
+            if (serviceCounts.isNotEmpty()) item { GraficoBarras("Solicitudes por servicio", serviceCounts) }
         }
-        if (serviceCounts.isNotEmpty()) item { GraficoBarras("Solicitudes por servicio", serviceCounts) }
         item {
             Text("Conversión = concretadas ÷ (concretadas + no concretadas). Las pendientes se excluyen.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Historial", style = MaterialTheme.typography.titleMedium)
-                if (listaCotizaciones.size > 8) TextButton(onClick = { mostrarTodo = !mostrarTodo }) {
-                    Text(if (mostrarTodo) "Mostrar menos" else "Ver todas (${listaCotizaciones.size})")
+                if (cotizacionesFiltradas.size > 8) TextButton(onClick = { mostrarTodo = !mostrarTodo }) {
+                    Text(if (mostrarTodo) "Mostrar menos" else "Ver todas (${cotizacionesFiltradas.size})")
                 }
             }
         }
-        items(listaCotizaciones.take(recentLimit), key = { it.id }) { cotizacion ->
+        items(cotizacionesFiltradas.take(recentLimit), key = { it.id }) { cotizacion ->
             TarjetaCotizacionItem(cotizacion = cotizacion, onRegistrarResultado = onRegistrarResultado)
         }
-        if (listaCotizaciones.isEmpty()) item { Text("Todavía no hay cotizaciones guardadas.", style = MaterialTheme.typography.bodyMedium) }
+        if (cotizacionesFiltradas.isEmpty()) item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Sin registros para mostrar", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (listaCotizaciones.isEmpty()) "Todavía no hay cotizaciones guardadas en este teléfono." else "Cambia el periodo para consultar otros registros.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -156,6 +223,13 @@ private fun weeklyQuoteCounts(quotes: List<CotizacionEntity>): List<Pair<String,
         }
         label to count
     }
+}
+
+private fun formatDuration(milliseconds: Long): String {
+    val totalSeconds = milliseconds / 1_000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return if (minutes > 0) "${minutes}m ${seconds}s" else "${seconds}s"
 }
 
 @Composable

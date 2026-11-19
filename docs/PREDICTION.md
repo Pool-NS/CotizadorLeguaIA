@@ -1,3 +1,5 @@
 # Predicción
 
-Existe una evaluación aislada reproducible con regresión logística y 200 registros completamente sintéticos. Se divide 140/30/30 con estratificación. La evaluación del script reporta validación y prueba por separado; variables posteriores como el tiempo de respuesta del cliente quedan fuera de las características. Las métricas en `qa/prediction/metrics.json` describen únicamente esta muestra de prueba sintética, no el negocio real. No está conectada a Android ni toma decisiones comerciales. Antes de uso real requiere consentimiento/gobernanza, resultados etiquetados válidos, calibración temporal y evaluación de sesgo.
+No hay un componente predictivo integrado en Android ni un modelo de cotización entrenado. El predictor de demostración y sus datos sintéticos se retiraron. La IA actual solo interpreta el requerimiento y propone campos para revisión humana; no decide precios, conversión ni disponibilidad de materiales.
+
+Un modelo predictivo futuro requiere datos reales autorizados, variables y etiqueta definidas previamente, suficientes observaciones, separación temporal/holdout, evaluación de calibración y sesgo, y revisión humana. No se debe presentar una predicción sin esa evidencia.
