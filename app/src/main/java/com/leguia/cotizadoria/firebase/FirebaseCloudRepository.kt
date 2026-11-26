@@ -116,7 +116,7 @@ class FirebaseCloudRepository(
         "startedAtEpochMs" to fechaHoraInicio,
         "priceCommunicatedAtEpochMs" to fechaHoraPrecioComunicado,
         "durationMillis" to fechaHoraPrecioComunicado?.minus(fechaHoraInicio)?.takeIf { it >= 0L },
-        "communicationConfirmed" to capturaComunicacionCompleta && fechaHoraPrecioComunicado != null,
+        "communicationConfirmed" to (capturaComunicacionCompleta && fechaHoraPrecioComunicado != null),
         "appVersion" to appVersion,
         "deviceModel" to Build.MODEL.take(80),
         "androidApiLevel" to Build.VERSION.SDK_INT,

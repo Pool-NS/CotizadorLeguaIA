@@ -202,7 +202,7 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "INSERT INTO parametro_precio (servicioId, concepto, precioUnitario, unidadMedida, activo) VALUES (?, ?, ?, ?, 1)",
-                    arrayOf(toldoServiceId, concept, tariff.price, "cotización")
+                    arrayOf<Any?>(toldoServiceId, concept, tariff.price, "cotización")
                 )
             }
         }
