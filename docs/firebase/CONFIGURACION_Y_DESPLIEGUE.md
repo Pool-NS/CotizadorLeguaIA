@@ -4,7 +4,7 @@
 
 Esta rama incorpora integración opcional con Firebase; la aplicación continúa funcionando con Room/SQLite si Firebase no está configurado. La sesión local de Firebase CLI está autenticada con la cuenta del propietario. Se creó el proyecto dedicado `cotizador-leguia-poolns-2026` y se registró Android `com.leguia.cotizadoria` (Firebase App ID `1:643386841099:android:b2454fbcb34266d4910f0e`). El archivo `app/google-services.json` y el ID de organización en `local.properties` son configuración local ignorada por Git.
 
-**Despliegue pendiente:** Firebase Console abre el asistente de creación, pero el selector de ubicación aparece vacío. Aún no existe una base Firestore real; las reglas e índices no se han desplegado y no se han creado usuarios ni membresías. La CLI local ahora solicita `firebase login --reauth`. La ubicación elegida para el proyecto es `southamerica-west1` (Santiago); confirma que esté visible en el selector antes de crear la base, porque no se puede cambiar después. No cambies el proyecto `.firebaserc`, ya apunta al proyecto dedicado.
+**Estado de base:** Cloud Firestore `(default)` existe en la región multirregional `nam5` (Estados Unidos), confirmado en Firebase Console el 25-11-2026. La base está vacía; falta confirmar/publicar reglas e índices y no se han creado usuarios ni membresías. La CLI local solicita `firebase login --reauth`. La ubicación de una base ya creada no se puede cambiar. No cambies el proyecto `.firebaserc`, ya apunta al proyecto dedicado.
 
 **Verificación local (25-11-2026):** `testDebugUnitTest`, `lintDebug` y `assembleDebug` terminaron correctamente después de migrar Room a KSP y actualizar AGP/Gradle por compatibilidad. La configuración Google Services se procesó. La APK debug se genera en `app/build/outputs/apk/debug/app-debug.apk`; no es un APK firmado para producción ni demuestra escritura remota en Firestore.
 
@@ -26,8 +26,8 @@ App Check / Play Integrity no está habilitado en este código. Firestore Authen
 ## Configuración manual del proyecto real
 
 1. Proyecto creado: `cotizador-leguia-poolns-2026`. La app Android ya está registrada con el paquete `com.leguia.cotizadoria`. Conserva `app/google-services.json` solo en el equipo; está ignorado por Git.
-2. Si el selector de ubicación aparece vacío, vuelve a cargar Firebase Console y confirma que Cloud Firestore API (`firestore.googleapis.com`) esté habilitada para `cotizador-leguia-poolns-2026`. La CLI puede pedir `firebase login --reauth` antes de volver a consultar ubicaciones.
-3. Selecciona `southamerica-west1` (Santiago). La ubicación es inmutable. Crea Firestore en modo producción y habilita protección contra borrado.
+2. Cloud Firestore `(default)` ya se creó en `nam5` (EE. UU.). La región no puede cambiarse; considera la ubicación al evaluar latencia para usuarios en Perú.
+3. Abre la pestaña Rules de la base y verifica que coincida con `firestore.rules`. Mantén acceso denegado por defecto. La CLI puede pedir `firebase login --reauth` antes de desplegar reglas o índices.
 4. En Firebase Console, habilita Authentication → Sign-in method → Email/Password. Crea cuentas de prueba para las personas autorizadas; no habilites registro abierto.
 5. Crea `organizations/{ORGANIZATION_ID}/members/{FIREBASE_UID}` desde un proceso administrativo confiable con `{ "active": true }`. No permitas que la app cliente cree o cambie membresías. El UID se obtiene en Authentication. La cuenta solo puede escribir si está activa en esa organización.
 6. La organización local ya está configurada. La clave `firebaseOrganizationId` en `local.properties` contiene el ID de proyecto y el archivo no se publica. La URL del backend sigue siendo configurable allí:
@@ -103,4 +103,4 @@ Si una clave, token, archivo de servicio o URL privada se publica accidentalment
 
 ## Estado actual y continuación
 
-Cuando el selector muestre `southamerica-west1`, continúa con modo de producción y el ID `(default)`. Después, vuelve a autenticar Firebase CLI con `firebase login --reauth` y avisa para desplegar reglas e índices, activar Email/Password, crear la cuenta/membresía de prueba y preparar la distribución interna. No compartas códigos de inicio de sesión, tokens de servicio ni contraseñas por el chat.
+La base `(default)` ya existe en `nam5` (EE. UU.). La sesión CLI requiere `firebase login --reauth` para desplegar reglas e índices; luego debe habilitarse Email/Password, crearse una cuenta/membresía de prueba y prepararse la distribución interna. No compartas códigos de inicio de sesión, tokens de servicio ni contraseñas por el chat.

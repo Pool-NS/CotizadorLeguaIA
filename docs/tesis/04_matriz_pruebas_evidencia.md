@@ -35,4 +35,4 @@ La prueba del proveedor Gemini es simulada en los tests backend; no prueba dispo
 
 ## Estado de Firebase
 
-El proyecto `cotizador-leguia-poolns-2026` y la app Android están creados. Firebase Console abre el asistente de base, pero el selector de región está vacío; no se ha creado Firestore ni hay una prueba real de lectura/escritura remota. La sesión CLI actual requiere `firebase login --reauth`. Reglas, usuarios, membresías, App Distribution y capturas de Firestore están pendientes. La traza local de guardado solo acredita medición de Room, no persistencia remota.
+El proyecto `cotizador-leguia-poolns-2026`, la app Android y Firestore `(default)` están creados. Firebase Console confirma región multirregional `nam5` (EE. UU.) y base vacía. No se ha demostrado lectura/escritura desde Android. La sesión CLI requiere `firebase login --reauth`; reglas publicadas, usuarios, membresías, App Distribution y capturas de escritura siguen pendientes. La traza local de guardado solo acredita medición de Room, no persistencia remota.
