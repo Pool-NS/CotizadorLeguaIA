@@ -60,6 +60,8 @@ data class CotizacionEntity(
     val materialDescripcion: String? = null,
     val fechaHoraPrecioComunicado: Long? = null,
     val capturaComunicacionCompleta: Boolean = false,
+    /** Monotonic elapsed milliseconds from quote start until price communication; null when not confirmed. */
+    val durationMillis: Long? = null,
     @ColumnInfo(defaultValue = "''")
     val firebaseDocumentId: String = UUID.randomUUID().toString(),
     val firebaseOwnerUid: String? = null,

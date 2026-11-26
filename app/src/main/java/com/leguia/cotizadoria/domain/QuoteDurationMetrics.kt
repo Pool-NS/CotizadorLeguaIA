@@ -8,12 +8,10 @@ data class QuoteDurationMetrics(
     val medianMillis: Long?
 )
 
-/** Summarizes only nonnegative intervals with both app-captured timestamps. */
+/** Summarizes nonnegative monotonic intervals from quote start to confirmed price communication. */
 fun calculateQuoteDurationMetrics(quotes: List<CotizacionEntity>): QuoteDurationMetrics {
     val durations = quotes.mapNotNull { quote ->
-        quote.fechaHoraPrecioComunicado
-            ?.minus(quote.fechaHoraInicio)
-            ?.takeIf { it >= 0L }
+        quote.durationMillis?.takeIf { it >= 0L }
     }.sorted()
     if (durations.isEmpty()) return QuoteDurationMetrics(0, null, null)
 

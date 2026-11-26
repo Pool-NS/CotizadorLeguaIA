@@ -10,10 +10,12 @@ ISO/IEC 9126-1:2001 está retirada. Si la matriz del curso exige esa edición, c
 
 | Categoría | Medida | Fuente | Unidad / cálculo | Estado |
 |---|---|---|---|---|
-| Proceso de cotización | Duración total registrada con app | `startedAtEpochMs` → `priceCommunicatedAtEpochMs` en Room/Firestore | minutos = diferencia ms / 60 000 | Datos reales solo tras ejecutar protocolo; marcas no independientes. |
+| Proceso de cotización | Duración total registrada con app | `durationMillis` generado con `SystemClock.elapsedRealtime()` desde inicio del flujo hasta confirmación del operador de que comunicó el precio | minutos = `durationMillis` / 60 000 | Solo nuevas cotizaciones; null si no se confirma comunicación o no hay intervalo válido. Marca operativa declarada, no independiente. |
 | Proceso de cotización | Exactitud | Auditoría humana independiente, instrumento aprobado | correctas / evaluadas × 100 | No la infiere Firebase ni la IA; falta captura independiente aprobada. |
 | Proceso de cotización | Oportunidad | Registro de solicitudes elegibles y precio comunicado en el acto | comunicadas / elegibles × 100 | La casilla actual es declaración del operador y no prueba por sí sola el hecho. |
 | Eficiencia técnica | Tiempo de interpretación IA | Firebase Performance `ai_interpretation` y trazas Android | ms agregados por Firebase, según muestreo/configuración | No equivale a duración completa de atención. |
+| Eficiencia técnica | Tiempo de cálculo | Firebase Performance `quote_calculation` | ms monotónicos de cálculo local | Incorporado en 1.5.1; falta observarlo en dispositivo. |
+| Eficiencia técnica | Tiempo de consulta Firestore | Firebase Performance `cloud_quote_query` | duración de consulta autenticada (máximo 50 registros) | Incorporado en 1.5.1; falta observarlo en dispositivo. |
 | Eficiencia técnica | Duración del envío cloud | Firebase Performance `cloud_quote_sync` | duración de traza, conteos de intento/subida/fallo | No equivale al tiempo de cotización. |
 | Eficiencia técnica | Memoria / CPU / red del teléfono | Android Studio Profiler, Perfetto y/o Macrobenchmark aprobados | según herramienta/protocolo | Firebase Performance no registra toda esta medición por fila. |
 | Cumplimiento de requisitos | Pruebas dentro de metas acordadas | ejecución reproducible contra requisitos no funcionales aprobados | pruebas que cumplen / pruebas válidas × 100 | No calcular hasta aprobar umbrales y plan de prueba. |
@@ -59,6 +61,24 @@ Fuentes de los instrumentos: [Android Studio Profiler](https://developer.android
 | ENF-04 | Datos enviados por operación | Pendiente de aprobación | Red y escenario por definir | Asesor | Inspector de red/perfil |
 | ENF-05 | Cumplimiento global de eficiencia | Pendiente de aprobación | Fórmula/protocolo por definir | Asesor | Resumen reproducible |
 
+### Propuesta provisional de umbrales para revisar con el docente
+
+Los valores siguientes son propuestas iniciales, no requisitos de ISO/IEC 9126 ni criterios aprobados. No se han evaluado y no permiten declarar cumplimiento. Antes de medir, el docente debe aceptar o sustituir cada meta y fijar dispositivo, red, muestra, repeticiones, estadístico y exclusiones.
+
+| ID propuesto | Medida y escenario controlado | Meta candidata | Criterio de comparación |
+|---|---|---|---|
+| ENF-01a | Inicio en frío hasta pantalla inicial utilizable, equipo objetivo | p95 ≤ 3.0 s | p95 de ejecuciones válidas |
+| ENF-01b | Cálculo local con solicitud y tarifa disponibles | p95 ≤ 250 ms | p95 de `quote_calculation` |
+| ENF-01c | Consulta de hasta 50 registros por Wi-Fi estable | p95 ≤ 3.0 s | p95 de `cloud_quote_query`; informar errores aparte |
+| ENF-01d | Gemini con texto fijo de ensayo y backend desplegado | p95 ≤ 15 s | p95 de `ai_interpretation`; separar timeout/error |
+| ENF-01e | Guardado y sincronización cloud de una cotización | p95 ≤ 5 s | `cloud_quote_sync`; red controlada |
+| ENF-02 | Pico RSS durante 10 cotizaciones consecutivas | ≤ 250 MiB | Máximo observado en Android Profiler/Perfetto |
+| ENF-03 | CPU en escenario repetible de 10 cotizaciones | promedio ≤ 35% de un núcleo durante ventana activa de 60 s | CPU de proceso desde Perfetto |
+| ENF-04 | Bytes de una consulta Firestore de hasta 50 cotizaciones | ≤ 256 KiB recibidos; reportar TX/RX separado | Network Profiler con caché y condición declaradas |
+| ENF-05 | Operaciones técnicas que cumplen metas aprobadas | ≥ 90% de operaciones válidas | `100 × válidas que cumplen / válidas evaluadas`; aprobar manejo de fallos y ausentes |
+
+El asesor debe aprobar o reemplazar estas metas antes de usarlas. No se computa el porcentaje de cumplimiento en esta etapa.
+
 ## Pruebas implementadas en esta rama
 
 El directorio `firebase-tests/` usa Firebase Local Emulator Suite para comprobar que: (a) acceso anónimo es rechazado, (b) una persona autenticada sin membresía activa es rechazada, (c) el miembro activo puede crear y leer el registro mínimo permitido, (d) texto libre adicional y actualizaciones se rechazan, y (e) otra organización no puede leer los datos. Estas son pruebas de reglas de acceso; no demuestran el comportamiento de un proyecto cloud real ni la validez de las métricas de tesis.
@@ -71,3 +91,7 @@ El directorio `firebase-tests/` usa Firebase Local Emulator Suite para comprobar
 - [Android Studio Profiler](https://developer.android.com/studio/profile)
 - [Perfetto](https://perfetto.dev/docs/)
 - [Plantilla vacía de ejecuciones técnicas](../data/technical_efficiency_runs_template.csv)
+
+## Estado de ejecución instrumental (26-11-2026)
+
+`testDebugUnitTest`, `lintDebug`, `assembleDebug` y `compileDebugAndroidTestKotlin` finalizaron correctamente localmente. La prueba instrumentada de mostrar/ocultar contraseña compiló, pero Android canceló la instalación (`INSTALL_FAILED_USER_RESTRICTED`), por lo que no llegó a correr. La versión 1.5.0 (8) generó un documento real de prueba visible en Firestore; 1.5.1 (9) agrega consulta autenticada y aún requiere probarse en el teléfono. Android Profiler/Perfetto no se ejecutó. No hay porcentaje de cumplimiento, gráfico técnico, bootstrap ni resultado estadístico generado. Firebase Performance ofrece trazas agregadas; el CSV por observación se exporta localmente y CPU/RAM deben obtenerse con herramientas Android.

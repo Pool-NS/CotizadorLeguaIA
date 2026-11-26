@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -25,13 +24,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.leguia.cotizadoria.security.AdminPinHasher
+import com.leguia.cotizadoria.components.CampoContrasena
 
 private const val ADMIN_PREFS = "admin_access"
 private const val ADMIN_PIN_HASH = "pin_pbkdf2_hash"
@@ -49,8 +47,8 @@ private const val LOCK_DURATION_MILLIS = 60_000L
 fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences(ADMIN_PREFS, Context.MODE_PRIVATE) }
-    var pin by remember { mutableStateOf("") }
-    var confirmation by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf(TextFieldValue()) }
+    var confirmation by remember { mutableStateOf(TextFieldValue()) }
     var error by remember { mutableStateOf<String?>(null) }
     var mustUpgradePassword by remember { mutableStateOf(false) }
     val isSetup = preferences.getString(ADMIN_PIN_HASH, null) == null &&
@@ -79,24 +77,18 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(Modifier.height(16.dp))
-            OutlinedTextField(
+            CampoContrasena(
                 value = pin,
-                onValueChange = { pin = it.take(MAX_ADMIN_PASSWORD_LENGTH); error = null },
-                label = { Text(if (isCredentialSetup) "Contraseña (12–64 caracteres)" else "Contraseña del jefe") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
+                onValueChange = { pin = it.copy(text = it.text.take(MAX_ADMIN_PASSWORD_LENGTH)); error = null },
+                label = if (isCredentialSetup) "Contraseña (12–64 caracteres)" else "Contraseña del jefe",
                 modifier = Modifier.fillMaxWidth()
             )
             if (isCredentialSetup) {
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
+                CampoContrasena(
                     value = confirmation,
-                    onValueChange = { confirmation = it.take(MAX_ADMIN_PASSWORD_LENGTH); error = null },
-                    label = { Text("Confirmar contraseña") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true,
+                    onValueChange = { confirmation = it.copy(text = it.text.take(MAX_ADMIN_PASSWORD_LENGTH)); error = null },
+                    label = "Confirmar contraseña",
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -105,12 +97,12 @@ fun PantallaLoginAdmin(onAccesoConcedido: () -> Unit, onVolver: () -> Unit) {
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    val result = processAdminLogin(pin, confirmation, isCredentialSetup, preferences)
+                    val result = processAdminLogin(pin.text, confirmation.text, isCredentialSetup, preferences)
                     error = result.message
                     mustUpgradePassword = result.requiresPasswordUpgrade
                     if (result.clearInputs) {
-                        pin = ""
-                        confirmation = ""
+                        pin = TextFieldValue()
+                        confirmation = TextFieldValue()
                     }
                     if (result.granted) onAccesoConcedido()
                 }

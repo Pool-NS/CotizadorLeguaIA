@@ -60,8 +60,8 @@ android {
         applicationId = "com.leguia.cotizadoria"
         minSdk = 24
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.5.0"
+        versionCode = 9
+        versionName = "1.5.1"
         buildConfigField("boolean", "FIREBASE_ENABLED", firebaseEnabled.toString())
         buildConfigField(
             "String",
@@ -108,6 +108,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)

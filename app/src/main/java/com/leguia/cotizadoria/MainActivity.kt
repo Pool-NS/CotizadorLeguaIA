@@ -1,6 +1,7 @@
 package com.leguia.cotizadoria
 
 import android.os.Bundle
+import android.os.SystemClock
 import android.app.Activity
 import android.content.Intent
 import android.speech.RecognizerIntent
@@ -24,6 +25,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -50,6 +52,7 @@ import com.leguia.cotizadoria.screens.PantallaPanelAdmin
 import com.leguia.cotizadoria.screens.PantallaResumenPrecio
 import com.leguia.cotizadoria.screens.PantallaSeleccionServicio
 import com.leguia.cotizadoria.viewmodel.CotizadorViewModel
+import com.leguia.cotizadoria.firebase.CloudQuoteSummary
 import com.leguia.cotizadoria.firebase.FirebaseCloudRepository
 import com.leguia.cotizadoria.firebase.FirebaseTraceRecorder
 import com.leguia.cotizadoria.firebase.NoOpTraceRecorder
@@ -113,19 +116,22 @@ class MainActivity : ComponentActivity() {
             var operadorActual by remember { mutableStateOf("Operador 1") }
             var esModoOffline by remember { mutableStateOf(false) }
             var servicioIdSeleccionado by remember { mutableIntStateOf(1) }
-            var inicioCotizacionMillis by remember { mutableLongStateOf(0L) }
+            var inicioCotizacionMillis by rememberSaveable { mutableLongStateOf(0L) }
+            var inicioCotizacionElapsedRealtime by rememberSaveable { mutableLongStateOf(0L) }
             var transcripcionVozInicial by remember { mutableStateOf<String?>(null) }
             var mensajeVoz by remember { mutableStateOf<String?>(null) }
             var cloudSignedIn by remember { mutableStateOf(firebaseCloud?.currentUserId != null) }
             var cloudBusy by remember { mutableStateOf(false) }
             var cloudStatus by remember { mutableStateOf<String?>(null) }
+            var remoteQuotes by remember { mutableStateOf<List<CloudQuoteSummary>?>(null) }
 
             LaunchedEffect(firebaseCloud) {
                 if (firebaseCloud?.currentUserId != null) {
                     cloudSignedIn = true
                     FirebaseSyncScheduler.enqueue(applicationContext)
                     val sync = runCatching { firebaseCloud.synchronizePendingQuotes() }.getOrNull()
-                    if (sync != null) cloudStatus = "Sincronizadas: ${sync.uploaded}; pendientes con error: ${sync.failed}."
+                    remoteQuotes = runCatching { firebaseCloud.fetchCloudQuotes() }.getOrNull()
+                    if (sync != null) cloudStatus = "Sincronizadas: ${sync.uploaded}; pendientes con error: ${sync.failed}. ${remoteQuotes?.size ?: "No se pudieron consultar"} cotizaciones recuperadas de Firestore."
                 }
             }
 
@@ -201,6 +207,7 @@ class MainActivity : ComponentActivity() {
                                 onAlternarModoRed = { esModoOffline = !esModoOffline },
                                 onIniciarNuevaCotizacion = {
                                     inicioCotizacionMillis = System.currentTimeMillis()
+                                    inicioCotizacionElapsedRealtime = SystemClock.elapsedRealtime()
                                     pantallaActual = DestinoPantalla.SELECCION_SERVICIO
                                 },
                                 onIrAPanelAdmin = { pantallaActual = DestinoPantalla.LOGIN_ADMIN },
@@ -223,6 +230,7 @@ class MainActivity : ComponentActivity() {
                                 signedIn = cloudSignedIn,
                                 busy = cloudBusy,
                                 statusMessage = cloudStatus,
+                                remoteQuotes = remoteQuotes,
                                 onSignIn = { email, password ->
                                     val cloud = firebaseCloud
                                     if (cloud == null) {
@@ -236,10 +244,12 @@ class MainActivity : ComponentActivity() {
                                                     cloudSignedIn = true
                                                     FirebaseSyncScheduler.enqueue(applicationContext)
                                                     val summary = runCatching { cloud.synchronizePendingQuotes() }.getOrNull()
+                                                    val quotes = runCatching { cloud.fetchCloudQuotes() }
+                                                    remoteQuotes = quotes.getOrNull()
                                                     cloudStatus = if (summary == null) {
-                                                        "Cuenta verificada. La sincronización quedó pendiente y se reintentará con conexión."
+                                                        "Cuenta verificada. La sincronización quedó pendiente y se reintentará con conexión. ${remoteQuotes?.size ?: "No se pudieron consultar"} cotizaciones leídas de Firestore."
                                                     } else {
-                                                        "Cuenta verificada. Sincronizadas: ${summary.uploaded}; pendientes: ${summary.failed}."
+                                                        "Cuenta verificada. Sincronizadas: ${summary.uploaded}; pendientes: ${summary.failed}. ${remoteQuotes?.size ?: "No se pudieron consultar"} cotizaciones leídas de Firestore."
                                                     }
                                                     pantallaActual = DestinoPantalla.INICIO
                                                 }
@@ -257,10 +267,28 @@ class MainActivity : ComponentActivity() {
                                         lifecycleScope.launch {
                                             FirebaseSyncScheduler.enqueue(applicationContext)
                                             val summary = runCatching { cloud.synchronizePendingQuotes() }.getOrNull()
+                                            val quotes = runCatching { cloud.fetchCloudQuotes() }
+                                            remoteQuotes = quotes.getOrNull()
                                             cloudStatus = if (summary == null) {
-                                                "La sincronización quedó pendiente; se reintentará al recuperar conexión."
+                                                "La sincronización quedó pendiente; se reintentará al recuperar conexión. ${remoteQuotes?.size ?: "No se pudieron consultar"} cotizaciones leídas de Firestore."
                                             } else {
-                                                "Sincronizadas: ${summary.uploaded}; pendientes: ${summary.failed}."
+                                                "Sincronizadas: ${summary.uploaded}; pendientes: ${summary.failed}. ${remoteQuotes?.size ?: "No se pudieron consultar"} cotizaciones leídas de Firestore."
+                                            }
+                                            cloudBusy = false
+                                        }
+                                    }
+                                },
+                                onLoadCloudQuotes = {
+                                    val cloud = firebaseCloud
+                                    if (cloud != null) {
+                                        cloudBusy = true
+                                        lifecycleScope.launch {
+                                            val result = runCatching { cloud.fetchCloudQuotes() }
+                                            remoteQuotes = result.getOrNull()
+                                            cloudStatus = if (result.isSuccess) {
+                                                "Consulta completada: ${remoteQuotes?.size ?: 0} cotizaciones disponibles en Firestore."
+                                            } else {
+                                                "No se pudieron consultar las cotizaciones. Revisa la conexión y los permisos de la cuenta."
                                             }
                                             cloudBusy = false
                                         }
@@ -356,7 +384,19 @@ class MainActivity : ComponentActivity() {
                                         firebaseOwnerUid = ownerUid,
                                         firebaseSyncState = if (ownerUid == null) "LOCAL_ONLY" else "PENDING"
                                     )
-                                    cotizacionGenerada = applyApprovedPrice(cloudOwnedQuote, tarifasActivas)
+                                    val calculationTrace = traceRecorder.start("quote_calculation")
+                                    val calculationStartedAt = SystemClock.elapsedRealtime()
+                                    cotizacionGenerada = try {
+                                        applyApprovedPrice(cloudOwnedQuote, tarifasActivas).also {
+                                            calculationTrace.putMetric("calculation_succeeded", 1L)
+                                        }
+                                    } catch (failure: Exception) {
+                                        calculationTrace.putMetric("calculation_succeeded", 0L)
+                                        throw failure
+                                    } finally {
+                                        calculationTrace.putMetric("duration_ms", SystemClock.elapsedRealtime() - calculationStartedAt)
+                                        calculationTrace.stop()
+                                    }
                                     pantallaActual = DestinoPantalla.RESUMEN_PRECIO
                                 },
                                 onVolver = {
@@ -369,6 +409,7 @@ class MainActivity : ComponentActivity() {
                         DestinoPantalla.RESUMEN_PRECIO -> {
                             PantallaResumenPrecio(
                                 cotizacion = cotizacionGenerada,
+                                inicioCotizacionElapsedRealtime = inicioCotizacionElapsedRealtime,
                                 servicioNombre = listaServicios.firstOrNull { it.id == cotizacionGenerada?.servicioId }?.nombre.orEmpty(),
                                 stock = listaStock,
                                 onFinalizarCotizacion = { quote ->
@@ -386,6 +427,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                         cotizacionGenerada = null
                                         inicioCotizacionMillis = 0L
+                                        inicioCotizacionElapsedRealtime = 0L
                                         pantallaActual = DestinoPantalla.INICIO
                                     }
                                 },

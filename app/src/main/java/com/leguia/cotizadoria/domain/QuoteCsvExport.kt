@@ -20,6 +20,7 @@ object QuoteCsvExport {
         "assistance_mode",
         "software_version",
         "quotation_time_minutes",
+        "quotation_time_milliseconds_monotonic",
         "operator_confirmed_price_communication",
         "quote_correct_independent_audit",
         "attributable_error_count",
@@ -37,8 +38,7 @@ object QuoteCsvExport {
         val rows = quotes.sortedBy(CotizacionEntity::fechaHoraInicio).map { quote ->
             val startTimestamp = formatUtc(quote.fechaHoraInicio)
             val communicationTimestamp = quote.fechaHoraPrecioComunicado?.let(::formatUtc).orEmpty()
-            val durationMinutes = quote.fechaHoraPrecioComunicado
-                ?.minus(quote.fechaHoraInicio)
+            val durationMinutes = quote.durationMillis
                 ?.takeIf { it >= 0L }
                 ?.div(60_000.0)
                 ?.let { String.format(Locale.ROOT, "%.4f", it) }
@@ -55,6 +55,7 @@ object QuoteCsvExport {
                 if (quote.esModoOffline) "manual" else "ai_assisted",
                 softwareVersion,
                 durationMinutes,
+                quote.durationMillis?.takeIf { it >= 0L }?.toString().orEmpty(),
                 if (!quote.capturaComunicacionCompleta) "" else if (communicationTimestamp.isNotEmpty()) "1" else "0",
                 "", // Accuracy requires an independent verification instrument.
                 "", // Attributable errors require the approved manual observation.

@@ -8,12 +8,20 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.perf.FirebasePerformance
 import com.leguia.cotizadoria.data.CotizacionDao
 import com.leguia.cotizadoria.data.CotizacionEntity
 import kotlinx.coroutines.tasks.await
 
 data class CloudSyncSummary(val uploaded: Int, val failed: Int)
+data class CloudQuoteSummary(
+    val id: String,
+    val serviceId: Int,
+    val lengthM: Double?,
+    val widthM: Double?,
+    val status: String
+)
 
 /** Sends only a minimized operational record; free-text requirements and operator names stay on-device. */
 class FirebaseCloudRepository(
@@ -50,6 +58,34 @@ class FirebaseCloudRepository(
 
     suspend fun signOut() {
         auth.signOut()
+    }
+
+    suspend fun fetchCloudQuotes(): List<CloudQuoteSummary> {
+        check(currentUserId != null) { "Inicia sesión para consultar las cotizaciones de nube." }
+        val trace = FirebasePerformance.getInstance().newTrace("cloud_quote_query")
+        trace.start()
+        try {
+            val documents = firestore.collection("organizations")
+                .document(organizationId)
+                .collection("quotes")
+                .orderBy("uploadedAt", Query.Direction.DESCENDING)
+                .limit(MAX_CLOUD_QUOTES)
+                .get()
+                .await()
+            val quotes = documents.documents.map { document ->
+                CloudQuoteSummary(
+                    id = document.getString("recordId") ?: document.id,
+                    serviceId = (document.getLong("serviceId") ?: 0L).toInt(),
+                    lengthM = document.getDouble("lengthM"),
+                    widthM = document.getDouble("widthM"),
+                    status = document.getString("quoteStatus") ?: "SIN_ESTADO"
+                )
+            }
+            trace.putMetric("quotes_found", quotes.size.toLong())
+            return quotes
+        } finally {
+            trace.stop()
+        }
     }
 
     suspend fun synchronizePendingQuotes(): CloudSyncSummary {
@@ -115,7 +151,7 @@ class FirebaseCloudRepository(
         "assistanceMode" to if (esModoOffline) "manual" else "ai_assisted",
         "startedAtEpochMs" to fechaHoraInicio,
         "priceCommunicatedAtEpochMs" to fechaHoraPrecioComunicado,
-        "durationMillis" to fechaHoraPrecioComunicado?.minus(fechaHoraInicio)?.takeIf { it >= 0L },
+        "durationMillis" to durationMillis?.takeIf { it >= 0L },
         "communicationConfirmed" to (capturaComunicacionCompleta && fechaHoraPrecioComunicado != null),
         "appVersion" to appVersion,
         "deviceModel" to Build.MODEL.take(80),
@@ -140,6 +176,7 @@ class FirebaseCloudRepository(
     private fun finiteOrNull(value: Double?): Double? = value?.takeIf(Double::isFinite)
 
     companion object {
+        private const val MAX_CLOUD_QUOTES = 50L
         private const val SYNCED = "SYNCED"
         private const val FAILED = "FAILED"
         private val TRANSIENT_FIRESTORE_ERRORS = setOf(

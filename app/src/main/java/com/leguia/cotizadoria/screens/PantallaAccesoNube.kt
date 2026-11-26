@@ -14,14 +14,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.leguia.cotizadoria.components.CampoContrasena
+import com.leguia.cotizadoria.firebase.CloudQuoteSummary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,13 +33,15 @@ fun PantallaAccesoNube(
     signedIn: Boolean,
     busy: Boolean,
     statusMessage: String?,
+    remoteQuotes: List<CloudQuoteSummary>?,
     onSignIn: (String, String) -> Unit,
     onSyncNow: () -> Unit,
+    onLoadCloudQuotes: () -> Unit,
     onSignOut: () -> Unit,
     onBack: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var password by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Sincronización segura") }) }) { insets ->
         Column(
@@ -51,6 +57,18 @@ fun PantallaAccesoNube(
                 Button(onClick = onSyncNow, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     if (busy) CircularProgressIndicator() else Text("Sincronizar registros pendientes")
                 }
+                Button(onClick = onLoadCloudQuotes, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                    Text("Consultar cotizaciones en Firebase")
+                }
+                remoteQuotes?.let { quotes ->
+                    Text("Cotizaciones recuperadas de Firestore: ${quotes.size}")
+                    if (quotes.isEmpty()) Text("No hay cotizaciones disponibles para esta organización.")
+                    quotes.take(5).forEach { quote ->
+                        val dimensions = listOfNotNull(quote.lengthM, quote.widthM)
+                            .joinToString(" × ") { value -> value.toString() }
+                        Text("${quote.id.take(8)} · ${quote.status} · ${dimensions.ifBlank { "sin medidas" }}")
+                    }
+                }
                 Button(onClick = onSignOut, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     Text("Cerrar sesión de nube")
                 }
@@ -62,17 +80,15 @@ fun PantallaAccesoNube(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                CampoContrasena(
                     value = password,
-                    onValueChange = { password = it.take(128) },
-                    label = { Text("Contraseña") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
+                    onValueChange = { password = it.copy(text = it.text.take(128)) },
+                    label = "Contraseña",
                     modifier = Modifier.fillMaxWidth()
                 )
                 Button(
-                    onClick = { onSignIn(email, password) },
-                    enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+                    onClick = { onSignIn(email, password.text) },
+                    enabled = !busy && email.isNotBlank() && password.text.isNotBlank(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (busy) CircularProgressIndicator()

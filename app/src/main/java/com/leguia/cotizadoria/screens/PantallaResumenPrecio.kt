@@ -1,5 +1,6 @@
 package com.leguia.cotizadoria.screens
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import com.leguia.cotizadoria.ui.format.formatDecimal
 @Composable
 fun PantallaResumenPrecio(
     cotizacion: CotizacionEntity?,
+    inicioCotizacionElapsedRealtime: Long,
     servicioNombre: String,
     stock: List<StockMaterialRow>,
     onFinalizarCotizacion: (CotizacionEntity) -> Unit,
@@ -52,7 +54,7 @@ fun PantallaResumenPrecio(
             QuoteDetailsCard(cotizacion, servicioNombre)
             QuotePriceCard(cotizacion)
             MaterialReadinessCard(cotizacion, stock)
-            QuoteSaveAction(cotizacion, onFinalizarCotizacion)
+            QuoteSaveAction(cotizacion, inicioCotizacionElapsedRealtime, onFinalizarCotizacion)
         }
     }
 }
@@ -144,9 +146,14 @@ private fun ApprovedPriceCard(cotizacion: CotizacionEntity) {
 }
 
 @Composable
-private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEntity) -> Unit) {
+private fun QuoteSaveAction(
+    cotizacion: CotizacionEntity,
+    inicioCotizacionElapsedRealtime: Long,
+    onSave: (CotizacionEntity) -> Unit
+) {
     var priceCommunicated by rememberSaveable(cotizacion.codigoCotizacion) { mutableStateOf(false) }
     var priceCommunicatedAt by rememberSaveable(cotizacion.codigoCotizacion) { mutableStateOf<Long?>(null) }
+    var communicationDurationMillis by rememberSaveable(cotizacion.codigoCotizacion) { mutableStateOf<Long?>(null) }
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
         Text(
             "Verifica el servicio, el largo, el ancho y el precio antes de guardar.",
@@ -160,7 +167,14 @@ private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEnt
                 checked = priceCommunicated,
                 onCheckedChange = { checked ->
                     priceCommunicated = checked
-                    priceCommunicatedAt = if (checked) System.currentTimeMillis() else null
+                    if (checked) {
+                        priceCommunicatedAt = System.currentTimeMillis()
+                        communicationDurationMillis = (SystemClock.elapsedRealtime() - inicioCotizacionElapsedRealtime)
+                            .takeIf { inicioCotizacionElapsedRealtime > 0L && it >= 0L }
+                    } else {
+                        priceCommunicatedAt = null
+                        communicationDurationMillis = null
+                    }
                 }
             )
             Text("Confirmo que comuniqué este precio al cliente.", style = MaterialTheme.typography.bodyMedium)
@@ -171,7 +185,8 @@ private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEnt
         onSave(
             cotizacion.copy(
                 fechaHoraPrecioComunicado = priceCommunicatedAt.takeIf { priceCommunicated },
-                capturaComunicacionCompleta = cotizacion.estado != "PENDIENTE_PRECIO"
+                capturaComunicacionCompleta = cotizacion.estado != "PENDIENTE_PRECIO",
+                durationMillis = communicationDurationMillis.takeIf { priceCommunicated }
             )
         )
     }, modifier = Modifier.fillMaxWidth()) {

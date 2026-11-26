@@ -18,7 +18,7 @@ class QuoteDurationMetricsTest {
     @Test
     fun ignoresMissingAndNegativeDurations() {
         val metrics = calculateQuoteDurationMetrics(
-            listOf(quote(60_000L), quote(null), quote(0L).copy(fechaHoraInicio = 60_000L))
+            listOf(quote(60_000L), quote(null), quote(-1L).copy(fechaHoraInicio = 60_000L))
         )
 
         assertEquals(1, metrics.sampleCount)
@@ -54,6 +54,7 @@ class QuoteDurationMetricsTest {
         fechaHoraInicio = startMillis,
         fechaHoraFin = null,
         esModoOffline = false,
-        fechaHoraPrecioComunicado = durationMillis?.let { startMillis + it }
+        fechaHoraPrecioComunicado = durationMillis?.let { startMillis + it },
+        durationMillis = durationMillis
     )
 }

@@ -9,11 +9,11 @@ import org.junit.Test
 class QuoteCsvExportTest {
     @Test
     fun exportUsesStableIdAndVersionWithoutCustomerTextOrOperator() {
-        val csv = QuoteCsvExport.build(listOf(sampleQuote()), mapOf(1 to "Carpas"), "1.5.0")
+        val csv = QuoteCsvExport.build(listOf(sampleQuote()), mapOf(1 to "Carpas"), "1.5.1")
 
         assertTrue(csv.contains("record_id,observation_date_utc,start_timestamp_utc"))
         assertTrue(csv.contains("OBS-000042,1970-01-01,1970-01-01T00:00:01.000Z,1970-01-01T00:01:31.000Z"))
-        assertTrue(csv.contains(",Carpas,,ANDROID_ROOM,ai_assisted,1.5.0,1.5000,1,,,,,"))
+        assertTrue(csv.contains(",Carpas,,ANDROID_ROOM,ai_assisted,1.5.1,1.5000,90000,1,,,,,"))
         assertFalse(csv.contains("cliente confidencial"))
         assertFalse(csv.contains("Operador Piero"))
         assertFalse(csv.contains("COT-12345"))
@@ -21,17 +21,17 @@ class QuoteCsvExportTest {
 
     @Test
     fun unverifiedAccuracyAndPhaseStayBlank() {
-        val csv = QuoteCsvExport.build(listOf(sampleQuote().copy(capturaComunicacionCompleta = false)), emptyMap(), "1.5.0")
+        val csv = QuoteCsvExport.build(listOf(sampleQuote().copy(capturaComunicacionCompleta = false, durationMillis = null)), emptyMap(), "1.5.1")
         val row = csv.trim().lines().last()
 
         val cells = row.split(',')
         assertEquals("", cells[4])
-        assertEquals("", cells[11])
         assertEquals("", cells[12])
         assertEquals("", cells[13])
         assertEquals("", cells[14])
-        assertTrue(cells[16].isNotBlank())
-        assertEquals("LOCAL_ONLY", cells[17])
+        assertEquals("", cells[15])
+        assertTrue(cells[17].isNotBlank())
+        assertEquals("LOCAL_ONLY", cells[18])
     }
 
     @Test
@@ -40,13 +40,12 @@ class QuoteCsvExportTest {
             interpretacionIaJson = "{}",
             corregidoPorHumano = true
         )
-        val cells = QuoteCsvExport.build(listOf(quote), emptyMap(), "1.5.0").trim().lines().last().split(',')
+        val cells = QuoteCsvExport.build(listOf(quote), emptyMap(), "1.5.1").trim().lines().last().split(',')
 
-        assertEquals("", cells[12])
         assertEquals("", cells[13])
         assertEquals("", cells[14])
-        assertEquals("1", cells[15])
-        assertTrue(cells[16].isNotBlank())
+        assertEquals("1", cells[16])
+        assertTrue(cells[17].isNotBlank())
     }
 
     private fun sampleQuote() = CotizacionEntity(
@@ -70,6 +69,7 @@ class QuoteCsvExportTest {
         fechaHoraFin = null,
         esModoOffline = false,
         fechaHoraPrecioComunicado = 91_000L,
-        capturaComunicacionCompleta = true
+        capturaComunicacionCompleta = true,
+        durationMillis = 90_000L
     )
 }
