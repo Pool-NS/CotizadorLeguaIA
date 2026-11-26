@@ -2,7 +2,7 @@
 
 ## Limitaciones conocidas
 
-1. Room/SQLite vive dentro de cada instalación. El código de sincronización Firebase está preparado en la rama, pero Firestore todavía no se creó; por tanto, no hay sincronización remota demostrada entre teléfonos y el dashboard sigue siendo local.
+1. Room/SQLite vive dentro de cada instalación. Firestore y sus reglas están configurados, pero no se verificó una sincronización real desde el teléfono; el dashboard sigue siendo local.
 2. FastAPI interpreta solicitudes y conecta Gemini, pero no almacena datos, no autentica trabajadores ni aplica cuotas/rate limit. Render se configura en el repositorio, pero esta revisión no verificó un host desplegado.
 3. Room incluye entidades de producción, requerimientos y predicción, aunque no hay flujo completo de todas ellas ni predictor conectado. No inferir que su presencia en el esquema sea una funcionalidad terminada.
 4. No hay receta aprobada de consumo; la app no promete suficiencia, no reserva material y no descuenta stock automáticamente al cotizar o vender.
@@ -16,14 +16,14 @@
 12. No se midieron CPU, memoria RAM ni tráfico de red en un dispositivo real. La plantilla `qa/data/technical_efficiency_runs_template.csv` está vacía y los criterios no funcionales esperan aprobación.
 13. El flujo actual de App Distribution entrega una APK Debug de ensayo; no hay certificado de publicación ni variante release distribuida. No se presenta como evidencia de producción.
 14. App Distribution contiene el release de prueba `1.5.0 (8)`, pero ningún tester/grupo fue añadido. La instalación requiere asignar un tester autorizado.
-15. Las pruebas de reglas en emulador pasaron (5/5); una prueba real desde la app requiere cuenta autenticada con membresía activa y teléfono conectado. El equipo no tenía dispositivo visible por ADB al verificar.
+15. Las pruebas de reglas en emulador pasaron (5/5). El teléfono físico `2409BRN2CY` (Android 16 / API 36) detectó e inició la app, pero la pantalla de sincronización indicó fallo de inicio de sesión; aún falta cuenta/membresía activa para la escritura real.
 16. `npm audit` reporta cinco vulnerabilidades altas transitivas del SDK de Firebase en las dependencias de test; deben revisarse al actualizar el SDK/compatibilidad de Node.
 
 Android documenta que `allowBackup=false` puede no impedir transferencias directas entre dispositivos en ciertos fabricantes si la app apunta a Android 12 o posterior; por eso el proyecto declara también exclusiones explícitas en reglas de respaldo en nube y transferencia. Debe confirmarse en los dispositivos objetivo. Referencia: [Android Developers — Auto Backup](https://developer.android.com/identity/data/autobackup).
 
 ## Capturas de interfaces verificadas
 
-**Estado:** pendiente. Al momento de la auditoría `adb devices -l` no mostró teléfonos y no se encontró ningún AVD configurado. Por esa razón esta carpeta no contiene capturas inventadas ni imágenes de previews como si fueran pantallas ejecutadas.
+**Estado:** comprobación parcial en teléfono físico `2409BRN2CY` (Android 16 / API 36): la app de ensayo se instaló y abrió. No se conserva la captura de la pantalla de sincronización porque exponía campos de autenticación. Las capturas seguras de Inicio, Formulario, Resumen, Panel, Tarifas y Stock siguen pendientes; no se usan previews como evidencia ejecutada.
 
 Para completar la evidencia visual, compilar e instalar el APK Debug en un emulador configurado o un dispositivo de prueba autorizado y capturar, como mínimo: Inicio, Formulario por servicio, Resumen, Panel, Tarifas y Stock. Anotar dispositivo, Android, `versionName`, estado de backend y si los datos son de prueba. No incluir datos reales de clientes.
 
