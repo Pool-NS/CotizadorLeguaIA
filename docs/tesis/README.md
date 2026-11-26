@@ -7,7 +7,7 @@
 **Estado posterior:** la rama `codex/firebase-integration` migra Room a versión 10 y sus pruebas/compilación se registran en `04_matriz_pruebas_evidencia.md`.
 **Fecha de auditoría inicial:** 2026-11-19; actualización Firebase: 2026-11-25.
 
-La auditoría inicial corresponde al commit base `72801f8` y a `cc07eab`; esos resultados no son resultados de compilación de la rama Firebase. El estado de integración, despliegue y pruebas cloud se informa por separado en los documentos enlazados abajo. No hay confirmación de despliegue Firebase en un proyecto real.
+La auditoría inicial corresponde al commit base `72801f8` y a `cc07eab`; esos resultados no son resultados de compilación de la rama Firebase. El estado de integración, despliegue y pruebas cloud se informa por separado en los documentos enlazados abajo. Firestore, reglas e índices ya están creados/publicados; la lectura y escritura desde Android siguen pendientes de una cuenta de prueba y un teléfono conectado.
 
 ## Documentos
 

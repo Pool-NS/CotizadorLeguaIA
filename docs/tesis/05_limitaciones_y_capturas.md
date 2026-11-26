@@ -11,7 +11,7 @@
 7. `exportSchema=false` y la falta de migración v1→2 dificultan certificar actualización desde esquemas muy antiguos.
 8. No se ejecutó pentest, DAST, escaneo Sonar contra servidor, Quality Gate remoto ni análisis Qodana en esta revisión. Los marcos ISO/IEC son referencias de calidad/seguridad, no certificación lograda.
 9. No se realizó una prueba visual de escalado, teclado, TalkBack o contraste en Android físico/emulador.
-10. Firestore `(default)` está creado en `nam5` (EE. UU.), pero aún falta confirmar/publicar reglas, autenticar un usuario de prueba y demostrar lectura/escritura remota. La CLI requiere reautenticación.
+10. Firestore `(default)` está creado en `nam5` (EE. UU.) y las reglas están publicadas. Falta habilitar Email/Password, autenticar un usuario de prueba con membresía activa y demostrar lectura/escritura desde Android.
 11. Hay instrumentación Firebase Performance para la interpretación, sincronización y guardado local Room; no se han observado trazas desde dispositivo. La traza `quote_local_save` mide solo la escritura local, no la duración completa de atención.
 12. No se midieron CPU, memoria RAM ni tráfico de red en un dispositivo real. La plantilla `qa/data/technical_efficiency_runs_template.csv` está vacía y los criterios no funcionales esperan aprobación.
 13. El flujo actual de App Distribution entrega una APK Debug de ensayo; no hay certificado de publicación ni variante release distribuida. No se presenta como evidencia de producción.

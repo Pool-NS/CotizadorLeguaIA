@@ -4,7 +4,7 @@
 
 Esta rama incorpora integración opcional con Firebase; la aplicación continúa funcionando con Room/SQLite si Firebase no está configurado. La sesión local de Firebase CLI está autenticada con la cuenta del propietario. Se creó el proyecto dedicado `cotizador-leguia-poolns-2026` y se registró Android `com.leguia.cotizadoria` (Firebase App ID `1:643386841099:android:b2454fbcb34266d4910f0e`). El archivo `app/google-services.json` y el ID de organización en `local.properties` son configuración local ignorada por Git.
 
-**Estado de base:** Cloud Firestore `(default)` existe en la región multirregional `nam5` (Estados Unidos), confirmado en Firebase Console el 25-11-2026. La base está vacía; falta confirmar/publicar reglas e índices y no se han creado usuarios ni membresías. La CLI local solicita `firebase login --reauth`. La ubicación de una base ya creada no se puede cambiar. No cambies el proyecto `.firebaserc`, ya apunta al proyecto dedicado.
+**Estado de base:** Cloud Firestore `(default)` existe en la región multirregional `nam5` (Estados Unidos), confirmado en Firebase Console el 25-11-2026. Las reglas e índices se publicaron desde la rama en esa fecha. La consola mostraba la base vacía en la verificación; aún no se crearon cuentas ni membresías de prueba y no se ha verificado escritura desde Android. La CLI reconoció la sesión autenticada al consultar el proyecto. La ubicación de una base ya creada no se puede cambiar. No cambies el proyecto `.firebaserc`, ya apunta al proyecto dedicado.
 
 **Verificación local (25-11-2026):** `testDebugUnitTest`, `lintDebug` y `assembleDebug` terminaron correctamente después de migrar Room a KSP y actualizar AGP/Gradle por compatibilidad. La configuración Google Services se procesó. La APK debug se genera en `app/build/outputs/apk/debug/app-debug.apk`; no es un APK firmado para producción ni demuestra escritura remota en Firestore.
 
@@ -27,7 +27,7 @@ App Check / Play Integrity no está habilitado en este código. Firestore Authen
 
 1. Proyecto creado: `cotizador-leguia-poolns-2026`. La app Android ya está registrada con el paquete `com.leguia.cotizadoria`. Conserva `app/google-services.json` solo en el equipo; está ignorado por Git.
 2. Cloud Firestore `(default)` ya se creó en `nam5` (EE. UU.). La región no puede cambiarse; considera la ubicación al evaluar latencia para usuarios en Perú.
-3. Abre la pestaña Rules de la base y verifica que coincida con `firestore.rules`. Mantén acceso denegado por defecto. La CLI puede pedir `firebase login --reauth` antes de desplegar reglas o índices.
+3. **Completado:** se publicaron `firestore.rules` y `firestore.indexes.json` con `firebase deploy --only firestore:rules,firestore:indexes --project cotizador-leguia-poolns-2026`. Las reglas compilaron y la publicación terminó exitosamente.
 4. En Firebase Console, habilita Authentication → Sign-in method → Email/Password. Crea cuentas de prueba para las personas autorizadas; no habilites registro abierto.
 5. Crea `organizations/{ORGANIZATION_ID}/members/{FIREBASE_UID}` desde un proceso administrativo confiable con `{ "active": true }`. No permitas que la app cliente cree o cambie membresías. El UID se obtiene en Authentication. La cuenta solo puede escribir si está activa en esa organización.
 6. La organización local ya está configurada. La clave `firebaseOrganizationId` en `local.properties` contiene el ID de proyecto y el archivo no se publica. La URL del backend sigue siendo configurable allí:
@@ -39,7 +39,7 @@ App Check / Play Integrity no está habilitado en este código. Firestore Authen
    ```
 
    `aiBackendUrlRelease` debe usar HTTPS. El identificador de organización no es una clave; aun así, no debe permitir acceso sin las reglas.
-7. Ejecuta las pruebas de reglas en el emulador antes de desplegarlas. Después de crear Firestore, publica solo reglas e índices con `firebase deploy --only firestore:rules,firestore:indexes --project cotizador-leguia-poolns-2026`. Nunca uses credenciales de usuario dentro del cliente Android.
+7. **Pruebas de reglas completadas:** 5 pruebas del emulador Firestore pasan: denegar escritura no autenticada, denegar miembro inactivo/inexistente, permitir creación/lectura de registro minimizado para miembro activo, rechazar campos libres/actualización y bloquear lectura entre organizaciones. Estas pruebas usan el emulador y no son escrituras en la base productiva. Nunca uses credenciales de usuario dentro del cliente Android.
 8. Instala el APK en un teléfono de prueba. Inicia sesión con la cuenta habilitada, realiza una cotización nueva, confirma que aparece en `organizations/{ORGANIZATION_ID}/quotes`, y comprueba que una cuenta no miembro recibe denegación. No uses información identificable real durante la prueba.
 
 ## Distribución de pruebas desde GitHub Actions
@@ -103,4 +103,4 @@ Si una clave, token, archivo de servicio o URL privada se publica accidentalment
 
 ## Estado actual y continuación
 
-La base `(default)` ya existe en `nam5` (EE. UU.). La sesión CLI requiere `firebase login --reauth` para desplegar reglas e índices; luego debe habilitarse Email/Password, crearse una cuenta/membresía de prueba y prepararse la distribución interna. No compartas códigos de inicio de sesión, tokens de servicio ni contraseñas por el chat.
+La base `(default)` existe en `nam5` (EE. UU.); reglas e índices están publicados y las cinco pruebas de reglas pasaron en el emulador. Pendiente: habilitar Email/Password, crear cuenta y membresía de prueba, verificar escritura/lectura desde Android, y configurar los secretos de distribución interna. La sesión CLI estuvo operativa durante el despliegue. No compartas códigos de inicio de sesión, tokens de servicio ni contraseñas por el chat.
