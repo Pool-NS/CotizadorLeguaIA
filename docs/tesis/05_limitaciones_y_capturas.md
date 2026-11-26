@@ -15,6 +15,9 @@
 11. Hay instrumentación Firebase Performance para la interpretación, sincronización y guardado local Room; no se han observado trazas desde dispositivo. La traza `quote_local_save` mide solo la escritura local, no la duración completa de atención.
 12. No se midieron CPU, memoria RAM ni tráfico de red en un dispositivo real. La plantilla `qa/data/technical_efficiency_runs_template.csv` está vacía y los criterios no funcionales esperan aprobación.
 13. El flujo actual de App Distribution entrega una APK Debug de ensayo; no hay certificado de publicación ni variante release distribuida. No se presenta como evidencia de producción.
+14. App Distribution contiene el release de prueba `1.5.0 (8)`, pero ningún tester/grupo fue añadido. La instalación requiere asignar un tester autorizado.
+15. Las pruebas de reglas en emulador pasaron (5/5); una prueba real desde la app requiere cuenta autenticada con membresía activa y teléfono conectado. El equipo no tenía dispositivo visible por ADB al verificar.
+16. `npm audit` reporta cinco vulnerabilidades altas transitivas del SDK de Firebase en las dependencias de test; deben revisarse al actualizar el SDK/compatibilidad de Node.
 
 Android documenta que `allowBackup=false` puede no impedir transferencias directas entre dispositivos en ciertos fabricantes si la app apunta a Android 12 o posterior; por eso el proyecto declara también exclusiones explícitas en reglas de respaldo en nube y transferencia. Debe confirmarse en los dispositivos objetivo. Referencia: [Android Developers — Auto Backup](https://developer.android.com/identity/data/autobackup).
 

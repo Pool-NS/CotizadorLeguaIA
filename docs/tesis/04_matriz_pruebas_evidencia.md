@@ -37,3 +37,5 @@ La prueba del proveedor Gemini es simulada en los tests backend; no prueba dispo
 ## Estado de Firebase
 
 El proyecto `cotizador-leguia-poolns-2026`, la app Android y Firestore `(default)` están creados. Firebase Console confirma región multirregional `nam5` (EE. UU.). Reglas e índices se publicaron correctamente y cinco pruebas de reglas pasaron en el emulador. No se ha demostrado lectura/escritura desde Android; faltan habilitar Email/Password, crear usuario/membresía de prueba, configurar App Distribution y obtener capturas de escritura. La traza local de guardado solo acredita medición de Room, no persistencia remota.
+
+El APK `1.5.0 (8)` de ensayo se cargó a Firebase App Distribution (release `48gqqn14hcu58`) sin asignar testers. `npm audit` detectó cinco vulnerabilidades altas transitivas en el SDK de Firebase empleado por las pruebas del emulador; no se aplicó una actualización forzada que pudiera cambiar versiones mayores. La suite de reglas sí completó con Node 22.18 pese al aviso de motor; el workflow especifica Node 24.12.
