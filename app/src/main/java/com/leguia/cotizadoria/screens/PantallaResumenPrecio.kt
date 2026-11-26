@@ -146,6 +146,7 @@ private fun ApprovedPriceCard(cotizacion: CotizacionEntity) {
 @Composable
 private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEntity) -> Unit) {
     var priceCommunicated by rememberSaveable(cotizacion.codigoCotizacion) { mutableStateOf(false) }
+    var priceCommunicatedAt by rememberSaveable(cotizacion.codigoCotizacion) { mutableStateOf<Long?>(null) }
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
         Text(
             "Verifica el servicio, el largo, el ancho y el precio antes de guardar.",
@@ -155,7 +156,13 @@ private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEnt
     }
     if (cotizacion.estado != "PENDIENTE_PRECIO") {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            androidx.compose.material3.Checkbox(checked = priceCommunicated, onCheckedChange = { priceCommunicated = it })
+            androidx.compose.material3.Checkbox(
+                checked = priceCommunicated,
+                onCheckedChange = { checked ->
+                    priceCommunicated = checked
+                    priceCommunicatedAt = if (checked) System.currentTimeMillis() else null
+                }
+            )
             Text("Confirmo que comuniqué este precio al cliente.", style = MaterialTheme.typography.bodyMedium)
         }
         Text("Si aún no lo comunicaste, guarda sin marcar la casilla. El panel contará esa respuesta como pendiente de comunicación.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -163,7 +170,7 @@ private fun QuoteSaveAction(cotizacion: CotizacionEntity, onSave: (CotizacionEnt
     Button(onClick = {
         onSave(
             cotizacion.copy(
-                fechaHoraPrecioComunicado = System.currentTimeMillis().takeIf { priceCommunicated },
+                fechaHoraPrecioComunicado = priceCommunicatedAt.takeIf { priceCommunicated },
                 capturaComunicacionCompleta = cotizacion.estado != "PENDIENTE_PRECIO"
             )
         )

@@ -33,6 +33,12 @@ interface CotizacionDao {
     @Update
     suspend fun actualizarCotizacion(cotizacion: CotizacionEntity)
 
+    @Query("SELECT * FROM cotizacion WHERE firebaseOwnerUid = :ownerUid AND firebaseSyncState IN ('PENDING', 'FAILED') ORDER BY fechaHoraInicio ASC")
+    suspend fun obtenerPendientesFirebase(ownerUid: String): List<CotizacionEntity>
+
+    @Query("UPDATE cotizacion SET firebaseSyncState = :state WHERE id = :id")
+    suspend fun actualizarEstadoFirebase(id: Int, state: String)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertarEventoEstado(evento: EventoTrazabilidadEntity)
 

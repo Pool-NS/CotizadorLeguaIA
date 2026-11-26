@@ -1,21 +1,31 @@
 import java.util.Properties
 
-val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) localPropertiesFile.inputStream().use { load(it) }
-}
-val debugAiBackendUrl = localProperties.getProperty("aiBackendUrl", "http://10.0.2.2:8000")
-val releaseAiBackendUrl = localProperties.getProperty("aiBackendUrlRelease", "")
-require(releaseAiBackendUrl.isBlank() || releaseAiBackendUrl.startsWith("https://")) {
-    "aiBackendUrlRelease must use HTTPS."
-}
-
 plugins {
     alias(libs.plugins.android.application)
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("kotlin-kapt")
     id("jacoco")
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) localPropertiesFile.inputStream().use { load(it) }
+}
+val debugAiBackendUrl = localProperties.getProperty("aiBackendUrl", "http://10.0.2.2:8000")
+val releaseAiBackendUrl = localProperties.getProperty("aiBackendUrlRelease", "")
+val firebaseOrganizationId = localProperties.getProperty("firebaseOrganizationId", "").trim()
+val firebaseServicesFile = project.file("google-services.json")
+val firebaseEnabled = firebaseServicesFile.isFile && firebaseOrganizationId.isNotBlank()
+require(releaseAiBackendUrl.isBlank() || releaseAiBackendUrl.startsWith("https://")) {
+    "aiBackendUrlRelease must use HTTPS."
+}
+
+if (firebaseEnabled) {
+    pluginManager.apply("com.google.gms.google-services")
+    pluginManager.apply("com.google.firebase.crashlytics")
+    pluginManager.apply("com.google.firebase.firebase-perf")
+    pluginManager.apply("com.google.firebase.appdistribution")
 }
 
 jacoco {
@@ -52,6 +62,12 @@ android {
         targetSdk = 35
         versionCode = 8
         versionName = "1.5.0"
+        buildConfigField("boolean", "FIREBASE_ENABLED", firebaseEnabled.toString())
+        buildConfigField(
+            "String",
+            "FIREBASE_ORGANIZATION_ID",
+            "\"${firebaseOrganizationId.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -102,6 +118,14 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     kapt(libs.androidx.room.compiler)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.perf)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

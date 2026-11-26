@@ -30,3 +30,9 @@ Resultados de la ejecución local del 19-11-2026, sobre la rama `codex/tesis-aud
 - Capturas: no disponibles; no se detectó ningún teléfono conectado ni AVD configurado.
 
 La prueba del proveedor Gemini es simulada en los tests backend; no prueba disponibilidad de red, clave, facturación o modelo en el proyecto del usuario. No se realizó una llamada real a Gemini en esta verificación.
+
+## Estado de la rama Firebase
+
+La rama `codex/firebase-integration` agrega autenticación y sincronización opcional con Firestore, pruebas de reglas en emulador y un flujo manual de distribución. Al registrar esta nota no se ha compilado esa rama: el equipo carece de dependencias Gradle completas y el acceso de red a repositorios Maven no terminó. La prueba local de reglas también está pendiente; las dependencias actuales requieren Node.js 24.12 o superior y el equipo tiene Node 22.18. El workflow CI se configuró con Node 24.12 para ejecutarla en GitHub Actions.
+
+Firebase CLI no tiene autenticación local y el repositorio carece de `google-services.json`, ID de proyecto y cuentas de servicio; por ello no se desplegaron reglas ni se distribuyó un APK. El emulador/CI puede comprobar las reglas antes de usar un proyecto real. Estos estados son pendientes, no aprobaciones ni fallos funcionales medidos.

@@ -17,14 +17,16 @@ object QuoteCsvExport {
         "service_type",
         "attention_modality",
         "record_source",
-        "connection_mode",
+        "assistance_mode",
         "software_version",
         "quotation_time_minutes",
         "operator_confirmed_price_communication",
         "quote_correct_independent_audit",
         "attributable_error_count",
         "attributable_error_codes",
-        "ai_fields_corrected_by_operator"
+        "ai_fields_corrected_by_operator",
+        "firebase_record_id",
+        "firebase_sync_state"
     )
 
     fun build(
@@ -50,14 +52,16 @@ object QuoteCsvExport {
                 serviceNames[quote.servicioId].orEmpty(),
                 "", // The observer records the approved attention modality.
                 "ANDROID_ROOM",
-                if (quote.esModoOffline) "offline" else "online",
+                if (quote.esModoOffline) "manual" else "ai_assisted",
                 softwareVersion,
                 durationMinutes,
                 if (!quote.capturaComunicacionCompleta) "" else if (communicationTimestamp.isNotEmpty()) "1" else "0",
                 "", // Accuracy requires an independent verification instrument.
                 "", // Attributable errors require the approved manual observation.
                 "",
-                if (quote.interpretacionIaJson == null) "" else if (quote.corregidoPorHumano) "1" else "0"
+                if (quote.interpretacionIaJson == null) "" else if (quote.corregidoPorHumano) "1" else "0",
+                quote.firebaseDocumentId,
+                quote.firebaseSyncState
             )
         }
         return (listOf(header) + rows).joinToString(separator = "\r\n") { row ->

@@ -5,6 +5,8 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
+import java.util.UUID
 
 @Entity(
     tableName = "cotizacion",
@@ -27,7 +29,8 @@ import androidx.room.PrimaryKey
         Index("servicioId"),
         Index("materialId"),
         Index("estado"),
-        Index("fechaHoraInicio")
+        Index("fechaHoraInicio"),
+        Index(value = ["firebaseDocumentId"], unique = true)
     ]
 )
 data class CotizacionEntity(
@@ -56,5 +59,10 @@ data class CotizacionEntity(
     val cantidadPuertas: Int? = null,
     val materialDescripcion: String? = null,
     val fechaHoraPrecioComunicado: Long? = null,
-    val capturaComunicacionCompleta: Boolean = false
+    val capturaComunicacionCompleta: Boolean = false,
+    @ColumnInfo(defaultValue = "''")
+    val firebaseDocumentId: String = UUID.randomUUID().toString(),
+    val firebaseOwnerUid: String? = null,
+    @ColumnInfo(defaultValue = "'LOCAL_ONLY'")
+    val firebaseSyncState: String = "LOCAL_ONLY"
 )

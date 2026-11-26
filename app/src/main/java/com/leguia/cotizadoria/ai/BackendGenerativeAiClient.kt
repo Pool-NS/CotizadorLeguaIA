@@ -9,14 +9,19 @@ import java.net.URI
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.CancellationException
 import java.io.ByteArrayOutputStream
+import com.leguia.cotizadoria.firebase.NoOpTraceRecorder
+import com.leguia.cotizadoria.firebase.TraceRecorder
 
 /** Calls the private project backend; provider credentials never enter the Android app. */
 class BackendGenerativeAiClient(
     private val baseUrl: String,
-    private val ioDispatcher: CoroutineDispatcher
+    private val ioDispatcher: CoroutineDispatcher,
+    private val traceRecorder: TraceRecorder = NoOpTraceRecorder
 ) : GenerativeAiClient {
     override suspend fun interpret(requirement: String): Result<RequirementInterpretation> =
         withContext(ioDispatcher) {
+            val trace = traceRecorder.start("ai_interpretation")
+            try {
             val interpretation = try {
                 require(requirement.isNotBlank()) { "Escribe o dicta un requerimiento." }
                 require(baseUrl.isNotBlank()) { "Configura la URL del backend de IA." }
@@ -47,6 +52,9 @@ class BackendGenerativeAiClient(
                 return@withContext Result.failure(IOException(failure.toSafeUserMessage()))
             }
             Result.success(interpretation)
+            } finally {
+                trace.stop()
+            }
         }
 }
 

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -43,15 +45,24 @@ import com.leguia.cotizadoria.domain.QuoteCsvExport
 import com.leguia.cotizadoria.screens.PantallaFormularioServicio
 import com.leguia.cotizadoria.screens.PantallaInicio
 import com.leguia.cotizadoria.screens.PantallaLoginAdmin
+import com.leguia.cotizadoria.screens.PantallaAccesoNube
 import com.leguia.cotizadoria.screens.PantallaPanelAdmin
 import com.leguia.cotizadoria.screens.PantallaResumenPrecio
 import com.leguia.cotizadoria.screens.PantallaSeleccionServicio
 import com.leguia.cotizadoria.viewmodel.CotizadorViewModel
+import com.leguia.cotizadoria.firebase.FirebaseCloudRepository
+import com.leguia.cotizadoria.firebase.FirebaseTraceRecorder
+import com.leguia.cotizadoria.firebase.NoOpTraceRecorder
+import com.leguia.cotizadoria.firebase.FirebaseSyncScheduler
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 enum class DestinoPantalla {
     INICIO,
     LOGIN_ADMIN,
     PANEL_ADMIN,
+    ACCESO_NUBE,
     SELECCION_SERVICIO,
     FORMULARIO_SERVICIO,
     RESUMEN_PRECIO
@@ -64,6 +75,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val db = AppDatabase.getDatabase(applicationContext)
+        val firebaseCloud = if (BuildConfig.FIREBASE_ENABLED) {
+            FirebaseCloudRepository(
+                context = applicationContext,
+                auth = FirebaseAuth.getInstance(),
+                firestore = FirebaseFirestore.getInstance(),
+                quoteDao = db.cotizacionDao(),
+                organizationId = BuildConfig.FIREBASE_ORGANIZATION_ID,
+                appVersion = BuildConfig.VERSION_NAME
+            )
+        } else null
         val repository = CotizadorRepository(
             servicioDao = db.servicioDao(),
             cotizacionDao = db.cotizacionDao(),
@@ -77,7 +98,11 @@ class MainActivity : ComponentActivity() {
         )
         val viewModel = CotizadorViewModel(
             repository,
-            BackendGenerativeAiClient(BuildConfig.AI_BACKEND_URL, Dispatchers.IO)
+            BackendGenerativeAiClient(
+                BuildConfig.AI_BACKEND_URL,
+                Dispatchers.IO,
+                if (BuildConfig.FIREBASE_ENABLED) FirebaseTraceRecorder() else NoOpTraceRecorder
+            )
         )
 
         setContent {
@@ -89,6 +114,18 @@ class MainActivity : ComponentActivity() {
             var inicioCotizacionMillis by remember { mutableLongStateOf(0L) }
             var transcripcionVozInicial by remember { mutableStateOf<String?>(null) }
             var mensajeVoz by remember { mutableStateOf<String?>(null) }
+            var cloudSignedIn by remember { mutableStateOf(firebaseCloud?.currentUserId != null) }
+            var cloudBusy by remember { mutableStateOf(false) }
+            var cloudStatus by remember { mutableStateOf<String?>(null) }
+
+            LaunchedEffect(firebaseCloud) {
+                if (firebaseCloud?.currentUserId != null) {
+                    cloudSignedIn = true
+                    FirebaseSyncScheduler.enqueue(applicationContext)
+                    val sync = runCatching { firebaseCloud.synchronizePendingQuotes() }.getOrNull()
+                    if (sync != null) cloudStatus = "Sincronizadas: ${sync.uploaded}; pendientes con error: ${sync.failed}."
+                }
+            }
 
             // Definición correcta del estado mutable opcional con Kotlin Compose
             var cotizacionGenerada: CotizacionEntity? by remember { mutableStateOf(null) }
@@ -122,7 +159,7 @@ class MainActivity : ComponentActivity() {
 
             BackHandler(enabled = pantallaActual != DestinoPantalla.INICIO) {
                 pantallaActual = when (pantallaActual) {
-                    DestinoPantalla.INICIO, DestinoPantalla.LOGIN_ADMIN, DestinoPantalla.PANEL_ADMIN, DestinoPantalla.SELECCION_SERVICIO -> DestinoPantalla.INICIO
+                    DestinoPantalla.INICIO, DestinoPantalla.LOGIN_ADMIN, DestinoPantalla.PANEL_ADMIN, DestinoPantalla.SELECCION_SERVICIO, DestinoPantalla.ACCESO_NUBE -> DestinoPantalla.INICIO
                     DestinoPantalla.FORMULARIO_SERVICIO -> DestinoPantalla.SELECCION_SERVICIO
                     DestinoPantalla.RESUMEN_PRECIO -> DestinoPantalla.FORMULARIO_SERVICIO
                 }
@@ -164,7 +201,11 @@ class MainActivity : ComponentActivity() {
                                     inicioCotizacionMillis = System.currentTimeMillis()
                                     pantallaActual = DestinoPantalla.SELECCION_SERVICIO
                                 },
-                                onIrAPanelAdmin = { pantallaActual = DestinoPantalla.LOGIN_ADMIN }
+                                onIrAPanelAdmin = { pantallaActual = DestinoPantalla.LOGIN_ADMIN },
+                                cloudConfigured = BuildConfig.FIREBASE_ENABLED,
+                                cloudSignedIn = cloudSignedIn,
+                                onIrASincronizacion = { pantallaActual = DestinoPantalla.ACCESO_NUBE },
+                                cloudStatus = cloudStatus
                             )
                         }
 
@@ -172,6 +213,65 @@ class MainActivity : ComponentActivity() {
                             PantallaLoginAdmin(
                                 onAccesoConcedido = { pantallaActual = DestinoPantalla.PANEL_ADMIN },
                                 onVolver = { pantallaActual = DestinoPantalla.INICIO }
+                            )
+                        }
+
+                        DestinoPantalla.ACCESO_NUBE -> {
+                            PantallaAccesoNube(
+                                signedIn = cloudSignedIn,
+                                busy = cloudBusy,
+                                statusMessage = cloudStatus,
+                                onSignIn = { email, password ->
+                                    val cloud = firebaseCloud
+                                    if (cloud == null) {
+                                        cloudStatus = "Firebase no está configurado para esta compilación."
+                                    } else {
+                                        cloudBusy = true
+                                        cloudStatus = null
+                                        lifecycleScope.launch {
+                                            runCatching { cloud.signIn(email, password) }
+                                                .onSuccess {
+                                                    cloudSignedIn = true
+                                                    FirebaseSyncScheduler.enqueue(applicationContext)
+                                                    val summary = runCatching { cloud.synchronizePendingQuotes() }.getOrNull()
+                                                    cloudStatus = if (summary == null) {
+                                                        "Cuenta verificada. La sincronización quedó pendiente y se reintentará con conexión."
+                                                    } else {
+                                                        "Cuenta verificada. Sincronizadas: ${summary.uploaded}; pendientes: ${summary.failed}."
+                                                    }
+                                                    pantallaActual = DestinoPantalla.INICIO
+                                                }
+                                                .onFailure {
+                                                    cloudStatus = "No se pudo iniciar sesión. Verifica la cuenta, conexión y permiso del responsable."
+                                                }
+                                            cloudBusy = false
+                                        }
+                                    }
+                                },
+                                onSyncNow = {
+                                    val cloud = firebaseCloud
+                                    if (cloud != null) {
+                                        cloudBusy = true
+                                        lifecycleScope.launch {
+                                            FirebaseSyncScheduler.enqueue(applicationContext)
+                                            val summary = runCatching { cloud.synchronizePendingQuotes() }.getOrNull()
+                                            cloudStatus = if (summary == null) {
+                                                "La sincronización quedó pendiente; se reintentará al recuperar conexión."
+                                            } else {
+                                                "Sincronizadas: ${summary.uploaded}; pendientes: ${summary.failed}."
+                                            }
+                                            cloudBusy = false
+                                        }
+                                    }
+                                },
+                                onSignOut = {
+                                    lifecycleScope.launch {
+                                        firebaseCloud?.signOut()
+                                        cloudSignedIn = false
+                                        cloudStatus = "Sesión cerrada. Las cotizaciones nuevas quedarán solo en este teléfono."
+                                    }
+                                },
+                                onBack = { pantallaActual = DestinoPantalla.INICIO }
                             )
                         }
 
@@ -249,7 +349,12 @@ class MainActivity : ComponentActivity() {
                                 errorIA = aiInterpretationState.error,
                                 onInterpretarRequerimiento = viewModel::interpretarRequerimiento,
                                 onGuardarFormulario = { cotizacionIngresada ->
-                                    cotizacionGenerada = applyApprovedPrice(cotizacionIngresada, tarifasActivas)
+                                    val ownerUid = firebaseCloud?.currentUserId
+                                    val cloudOwnedQuote = cotizacionIngresada.copy(
+                                        firebaseOwnerUid = ownerUid,
+                                        firebaseSyncState = if (ownerUid == null) "LOCAL_ONLY" else "PENDING"
+                                    )
+                                    cotizacionGenerada = applyApprovedPrice(cloudOwnedQuote, tarifasActivas)
                                     pantallaActual = DestinoPantalla.RESUMEN_PRECIO
                                 },
                                 onVolver = {
@@ -266,6 +371,17 @@ class MainActivity : ComponentActivity() {
                                 stock = listaStock,
                                 onFinalizarCotizacion = { quote ->
                                     viewModel.registrarCotizacion(quote) {
+                                        if (firebaseCloud != null && quote.firebaseOwnerUid != null) {
+                                            FirebaseSyncScheduler.enqueue(applicationContext)
+                                            lifecycleScope.launch {
+                                                val sync = runCatching { firebaseCloud.synchronizePendingQuotes() }.getOrNull()
+                                                cloudStatus = if (sync == null) {
+                                                    "Cotización guardada en el teléfono; se reintentará la sincronización."
+                                                } else {
+                                                    "Nube: ${sync.uploaded} sincronizada(s), ${sync.failed} pendiente(s)."
+                                                }
+                                            }
+                                        }
                                         cotizacionGenerada = null
                                         inicioCotizacionMillis = 0L
                                         pantallaActual = DestinoPantalla.INICIO

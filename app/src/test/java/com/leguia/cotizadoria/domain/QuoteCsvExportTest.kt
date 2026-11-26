@@ -13,7 +13,7 @@ class QuoteCsvExportTest {
 
         assertTrue(csv.contains("record_id,observation_date_utc,start_timestamp_utc"))
         assertTrue(csv.contains("OBS-000042,1970-01-01,1970-01-01T00:00:01.000Z,1970-01-01T00:01:31.000Z"))
-        assertTrue(csv.contains(",Carpas,,ANDROID_ROOM,online,1.5.0,1.5000,1,,,,"))
+        assertTrue(csv.contains(",Carpas,,ANDROID_ROOM,ai_assisted,1.5.0,1.5000,1,,,,,"))
         assertFalse(csv.contains("cliente confidencial"))
         assertFalse(csv.contains("Operador Piero"))
         assertFalse(csv.contains("COT-12345"))
@@ -30,6 +30,8 @@ class QuoteCsvExportTest {
         assertEquals("", cells[12])
         assertEquals("", cells[13])
         assertEquals("", cells[14])
+        assertTrue(cells[16].isNotBlank())
+        assertEquals("LOCAL_ONLY", cells[17])
     }
 
     @Test
@@ -44,6 +46,7 @@ class QuoteCsvExportTest {
         assertEquals("", cells[13])
         assertEquals("", cells[14])
         assertEquals("1", cells[15])
+        assertTrue(cells[16].isNotBlank())
     }
 
     private fun sampleQuote() = CotizacionEntity(

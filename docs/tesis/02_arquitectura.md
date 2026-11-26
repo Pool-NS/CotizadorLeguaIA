@@ -1,6 +1,6 @@
 # Diagramas de arquitectura
 
-Los diagramas describen componentes encontrados en el código y configuración del repositorio. Un bloque Render representa configuración de despliegue prevista, no una instancia cuya disponibilidad se haya verificado.
+Los diagramas describen componentes del código. En `codex/firebase-integration` la integración Firebase es opcional: solo se activa con `app/google-services.json` y `firebaseOrganizationId` local. No existe un proyecto Firebase real configurado ni se afirma que la nube esté desplegada. Ver [configuración y despliegue Firebase](../firebase/CONFIGURACION_Y_DESPLIEGUE.md).
 
 ## Contexto del sistema
 
@@ -8,6 +8,10 @@ Los diagramas describen componentes encontrados en el código y configuración d
 flowchart LR
     U[Trabajador o responsable] --> APP[App Android Cotizador Leguía]
     APP <--> ROOM[(Room / SQLite local por teléfono)]
+    APP -->|Auth y cotizaciones minimizadas; solo sesión autorizada| FB[(Cloud Firestore opcional)]
+    APP --> PERF[Performance Monitoring opcional]
+    APP --> CRASH[Crashlytics opcional]
+    CI[GitHub Actions manual] --> DIST[App Distribution opcional]
     APP -->|POST /v1/interpret cuando está habilitado| API[FastAPI]
     API -->|HTTPS con GEMINI_API_KEY del servidor| GEM[Gemini Developer API]
     API -. configuración de servicio .-> R[Render Web Service opcional]
@@ -29,9 +33,15 @@ flowchart TD
     VM --> AI[BackendGenerativeAiClient]
     AI --> NET[HttpURLConnection / JSON]
     S --> CSV[SAF: guardar CSV elegido por el usuario]
+    S --> CLOUD[Acceso Firebase opcional]
+    CLOUD --> AUTH[Firebase Authentication]
+    CLOUD --> SYNC[WorkManager: sincronización con red]
+    SYNC --> FSTORE[Firestore Rules: miembro activo de organización]
 ```
 
 La inyección de dependencias y navegación son manuales desde `MainActivity`; no se encontró una librería DI ni un `NavController`. `rememberSaveableStateHolder` conserva estado Compose de destinos durante la navegación. Persistencia comercial y reglas de precios se resuelven en Room y dominio local.
+
+En la rama Firebase, Room sigue siendo el almacén local. Los registros nuevos con una cuenta activa se sincronizan de forma diferida; registros ya existentes no se suben automáticamente. La nube recibe un subconjunto operativo, no el texto libre ni el precio. La versión Room pasa a 10 mediante migración 9→10.
 
 ## Flujo de interpretación IA
 

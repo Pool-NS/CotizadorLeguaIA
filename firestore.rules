@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function activeMember(orgId) {
+      let memberPath = /databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid);
+      return signedIn() && exists(memberPath) && get(memberPath).data.active == true;
+    }
+
+    function validQuoteShape(quoteId) {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'recordId', 'ownerUid', 'serviceId', 'materialId', 'lengthM', 'widthM', 'heightM',
+          'quoteStatus', 'assistanceMode', 'startedAtEpochMs', 'priceCommunicatedAtEpochMs',
+          'durationMillis', 'communicationConfirmed', 'appVersion', 'deviceModel',
+          'androidApiLevel', 'networkTransport', 'source', 'uploadedAt'
+        ])
+        && data.keys().hasOnly([
+          'recordId', 'ownerUid', 'serviceId', 'materialId', 'lengthM', 'widthM', 'heightM',
+          'quoteStatus', 'assistanceMode', 'startedAtEpochMs', 'priceCommunicatedAtEpochMs',
+          'durationMillis', 'communicationConfirmed', 'appVersion', 'deviceModel',
+          'androidApiLevel', 'networkTransport', 'source', 'uploadedAt'
+        ])
+        && data.recordId == quoteId
+        && data.ownerUid == request.auth.uid
+        && data.serviceId is int && data.serviceId >= 1 && data.serviceId <= 3
+        && (data.materialId == null || data.materialId is int)
+        && (data.lengthM == null || (data.lengthM is number && data.lengthM > 0 && data.lengthM <= 100))
+        && (data.widthM == null || (data.widthM is number && data.widthM > 0 && data.widthM <= 100))
+        && (data.heightM == null || (data.heightM is number && data.heightM > 0 && data.heightM <= 100))
+        && data.quoteStatus in ['PENDIENTE', 'PENDIENTE_PRECIO', 'CONCRETADA', 'NO_CONCRETADA']
+        && data.assistanceMode in ['manual', 'ai_assisted']
+        && data.startedAtEpochMs is int
+        && (data.priceCommunicatedAtEpochMs == null || data.priceCommunicatedAtEpochMs is int)
+        && (data.durationMillis == null || (data.durationMillis is int && data.durationMillis >= 0))
+        && data.communicationConfirmed is bool
+        && (!data.communicationConfirmed || data.priceCommunicatedAtEpochMs != null)
+        && data.appVersion is string && data.appVersion.size() <= 32
+        && data.deviceModel is string && data.deviceModel.size() <= 80
+        && data.androidApiLevel is int && data.androidApiLevel >= 24
+        && data.networkTransport in ['wifi', 'cellular', 'ethernet', 'other', 'offline', 'unknown']
+        && data.source == 'android_room'
+        && data.uploadedAt == request.time;
+    }
+
+    match /organizations/{orgId}/members/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /organizations/{orgId}/quotes/{quoteId} {
+      allow create: if activeMember(orgId) && validQuoteShape(quoteId);
+      allow get, list: if activeMember(orgId);
+      allow update, delete: if false;
+    }
+
+    match /organizations/{orgId}/performanceRuns/{runId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

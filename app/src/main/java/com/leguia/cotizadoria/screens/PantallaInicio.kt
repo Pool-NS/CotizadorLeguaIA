@@ -33,7 +33,11 @@ fun PantallaInicio(
     esModoOffline: Boolean,
     onAlternarModoRed: (Boolean) -> Unit,
     onIniciarNuevaCotizacion: () -> Unit,
-    onIrAPanelAdmin: () -> Unit
+    onIrAPanelAdmin: () -> Unit,
+    cloudConfigured: Boolean = false,
+    cloudSignedIn: Boolean = false,
+    onIrASincronizacion: () -> Unit = {},
+    cloudStatus: String? = null
 ) {
     Column(
         modifier = Modifier
@@ -60,6 +64,23 @@ fun PantallaInicio(
                 )
             }
         }
+        if (cloudConfigured) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Respaldo de registros", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (cloudSignedIn) "Cuenta conectada. Las nuevas cotizaciones se sincronizan con Firebase."
+                        else "Solo en este teléfono. Inicia sesión para sincronizar nuevas cotizaciones.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    cloudStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    OutlinedButton(onClick = onIrASincronizacion, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (cloudSignedIn) "Ver conexión de nube" else "Conectar cuenta de nube")
+                    }
+                }
+            }
+        }
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -67,8 +88,8 @@ fun PantallaInicio(
                 Text("Operador: $operadorSeleccionado", style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.weight(1f)) {
-                        Text(if (esModoOffline) "Modo sin conexión" else "Modo conectado", style = MaterialTheme.typography.titleSmall)
-                        Text(if (esModoOffline) "Registro local; interpretación manual." else "La IA requiere acceso al backend.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (esModoOffline) "Asistencia manual" else "Asistencia con IA", style = MaterialTheme.typography.titleSmall)
+                        Text(if (esModoOffline) "La solicitud se completa a mano; se guarda en el teléfono." else "La interpretación necesita conexión con el backend.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(checked = esModoOffline, onCheckedChange = onAlternarModoRed)
                 }
@@ -86,6 +107,11 @@ fun PantallaInicio(
                 }
             }
         }
-        Text("Los registros se almacenan en este dispositivo.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            if (cloudConfigured) "Room conserva la copia local; Firebase sincroniza registros minimizados."
+            else "Los registros se almacenan en este dispositivo.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
