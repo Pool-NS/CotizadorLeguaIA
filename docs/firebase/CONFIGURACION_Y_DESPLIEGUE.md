@@ -50,7 +50,7 @@ El flujo manual `.github/workflows/firebase-distribution.yml` compila, ejecuta p
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON de cuenta de servicio con permisos mínimos para distribuir app y desplegar reglas |
 | `FIREBASE_TESTERS` | Correos de testers autorizados, separados por coma |
 | `GOOGLE_SERVICES_JSON_BASE64` | Contenido Base64 de `google-services.json` |
-| `AI_BACKEND_URL_RELEASE` | URL HTTPS del backend de prueba |
+| `AI_BACKEND_URL` | URL HTTPS del backend para el APK debug de prueba |
 
 No pongas estos valores en archivos versionados ni en mensajes. La cuenta de servicio debe ser específica del proyecto, con permisos mínimos; revócala si se expone. El flujo está limitado a `workflow_dispatch` para impedir despliegues involuntarios. La prueba distribuida es `debug` y no debe publicarse en una tienda.
 
