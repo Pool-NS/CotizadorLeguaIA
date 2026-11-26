@@ -2,6 +2,7 @@ package com.leguia.cotizadoria.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.os.SystemClock
 import com.leguia.cotizadoria.ai.GenerativeAiClient
 import com.leguia.cotizadoria.ai.RequirementInterpretation
 import com.leguia.cotizadoria.data.CotizacionEntity
@@ -10,6 +11,8 @@ import com.leguia.cotizadoria.data.RegistroErrorEntity
 import com.leguia.cotizadoria.data.ServicioEntity
 import com.leguia.cotizadoria.domain.QuoteStatus
 import com.leguia.cotizadoria.domain.QuoteWorkflow
+import com.leguia.cotizadoria.firebase.NoOpTraceRecorder
+import com.leguia.cotizadoria.firebase.TraceRecorder
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +21,8 @@ import kotlinx.coroutines.launch
 
 class CotizadorViewModel(
     private val repository: CotizadorRepository,
-    private val generativeAiClient: GenerativeAiClient
+    private val generativeAiClient: GenerativeAiClient,
+    private val traceRecorder: TraceRecorder = NoOpTraceRecorder
 ) : ViewModel() {
 
     data class AiInterpretationState(
@@ -106,9 +110,19 @@ class CotizadorViewModel(
         onResultado: (Long) -> Unit
     ) {
         viewModelScope.launch {
-            val idGenerado = repository.guardarCotizacion(cotizacion)
-
-            onResultado(idGenerado)
+            val trace = traceRecorder.start("quote_local_save")
+            val startedAt = SystemClock.elapsedRealtime()
+            try {
+                val idGenerado = repository.guardarCotizacion(cotizacion)
+                trace.putMetric("save_succeeded", 1L)
+                onResultado(idGenerado)
+            } catch (failure: Exception) {
+                trace.putMetric("save_succeeded", 0L)
+                throw failure
+            } finally {
+                trace.putMetric("duration_ms", SystemClock.elapsedRealtime() - startedAt)
+                trace.stop()
+            }
         }
     }
 

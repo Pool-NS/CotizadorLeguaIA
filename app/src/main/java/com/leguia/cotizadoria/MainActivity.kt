@@ -96,13 +96,15 @@ class MainActivity : ComponentActivity() {
             inventarioDao = db.inventarioDao(),
             prediccionDao = db.prediccionDao()
         )
+        val traceRecorder = if (BuildConfig.FIREBASE_ENABLED) FirebaseTraceRecorder() else NoOpTraceRecorder
         val viewModel = CotizadorViewModel(
             repository,
             BackendGenerativeAiClient(
                 BuildConfig.AI_BACKEND_URL,
                 Dispatchers.IO,
-                if (BuildConfig.FIREBASE_ENABLED) FirebaseTraceRecorder() else NoOpTraceRecorder
-            )
+                traceRecorder
+            ),
+            traceRecorder
         )
 
         setContent {

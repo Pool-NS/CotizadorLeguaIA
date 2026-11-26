@@ -4,7 +4,7 @@
 
 Esta rama incorpora integración opcional con Firebase; la aplicación continúa funcionando con Room/SQLite si Firebase no está configurado. La sesión local de Firebase CLI está autenticada con la cuenta del propietario. Se creó el proyecto dedicado `cotizador-leguia-poolns-2026` y se registró Android `com.leguia.cotizadoria` (Firebase App ID `1:643386841099:android:b2454fbcb34266d4910f0e`). El archivo `app/google-services.json` y el ID de organización en `local.properties` son configuración local ignorada por Git.
 
-**Despliegue pendiente:** Google Cloud Firestore API está deshabilitada para ese proyecto. Firebase CLI devuelve HTTP 403 al consultar ubicaciones y al crear la base. Aún no existe una base Firestore real; las reglas e índices no se han desplegado y no se han creado usuarios ni membresías. Habilita la API indicada por Google Cloud Console y continúa desde “Después de habilitar la API” al final de esta guía. No cambies el proyecto `.firebaserc`, ya apunta al proyecto dedicado.
+**Despliegue pendiente:** Firebase Console abre el asistente de creación, pero el selector de ubicación aparece vacío. Aún no existe una base Firestore real; las reglas e índices no se han desplegado y no se han creado usuarios ni membresías. La CLI local ahora solicita `firebase login --reauth`. La ubicación elegida para el proyecto es `southamerica-west1` (Santiago); confirma que esté visible en el selector antes de crear la base, porque no se puede cambiar después. No cambies el proyecto `.firebaserc`, ya apunta al proyecto dedicado.
 
 **Verificación local (25-11-2026):** `testDebugUnitTest`, `lintDebug` y `assembleDebug` terminaron correctamente después de migrar Room a KSP y actualizar AGP/Gradle por compatibilidad. La configuración Google Services se procesó. La APK debug se genera en `app/build/outputs/apk/debug/app-debug.apk`; no es un APK firmado para producción ni demuestra escritura remota en Firestore.
 
@@ -15,7 +15,7 @@ Esta rama incorpora integración opcional con Firebase; la aplicación continúa
 | Room/SQLite | Copia local, cotización y operación sin conexión | Sigue siendo la fuente local; registros preexistentes permanecen locales. |
 | Firebase Authentication | Acceso por correo/contraseña a cuentas habilitadas por el responsable | La app no ofrece creación pública de cuentas. Debe habilitarse Email/Password en Firebase Console. |
 | Cloud Firestore | Registros minimizados de cotizaciones y tiempos observados | No recibe nombres, operador, texto libre del cliente, ni importes. Los documentos son inmutables desde cliente. |
-| Performance Monitoring | Trazas agregadas `ai_interpretation` y `cloud_quote_sync`, y métricas automáticas de rendimiento/red compatibles | No proporciona por sí solo un registro independiente por observación ni mide CPU/RAM por cotización. |
+| Performance Monitoring | Trazas agregadas `ai_interpretation`, `quote_local_save` y `cloud_quote_sync`, y métricas automáticas compatibles | No proporciona por sí solo un registro independiente por observación ni mide CPU/RAM por cotización. `quote_local_save` mide Room local; el tiempo de atención total se calcula con marcas inicio/comunicación y no se confunde con la traza. |
 | Crashlytics | Fallos no fatales inesperados de sincronización, con mensaje saneado | No se adjuntan textos de solicitud, contraseñas, tokens ni datos del cliente. Debe revisarse privacidad/consentimiento antes de habilitarlo para usuarios reales. |
 | App Distribution | Distribución interna del APK debug para dispositivos de ensayo | No es publicación Play Store ni artefacto release firmado para producción. |
 
@@ -26,8 +26,8 @@ App Check / Play Integrity no está habilitado en este código. Firestore Authen
 ## Configuración manual del proyecto real
 
 1. Proyecto creado: `cotizador-leguia-poolns-2026`. La app Android ya está registrada con el paquete `com.leguia.cotizadoria`. Conserva `app/google-services.json` solo en el equipo; está ignorado por Git.
-2. **Desbloqueo requerido:** en Google Cloud Console, selecciona `cotizador-leguia-poolns-2026` y habilita “Cloud Firestore API” (`firestore.googleapis.com`). Si tu cuenta no tiene permiso para habilitar servicios, solicita al propietario/administrador del proyecto que lo haga. La API debe habilitarse antes de que Firebase CLI pueda crear la base.
-3. Después de habilitar la API, consulta las ubicaciones disponibles con `firebase firestore:locations --project cotizador-leguia-poolns-2026`. El destino previsto es `southamerica-west1` (Santiago); confirma la ubicación antes de crear la base, porque no se puede cambiar después. Crea Firestore en modo producción y habilita protección contra borrado.
+2. Si el selector de ubicación aparece vacío, vuelve a cargar Firebase Console y confirma que Cloud Firestore API (`firestore.googleapis.com`) esté habilitada para `cotizador-leguia-poolns-2026`. La CLI puede pedir `firebase login --reauth` antes de volver a consultar ubicaciones.
+3. Selecciona `southamerica-west1` (Santiago). La ubicación es inmutable. Crea Firestore en modo producción y habilita protección contra borrado.
 4. En Firebase Console, habilita Authentication → Sign-in method → Email/Password. Crea cuentas de prueba para las personas autorizadas; no habilites registro abierto.
 5. Crea `organizations/{ORGANIZATION_ID}/members/{FIREBASE_UID}` desde un proceso administrativo confiable con `{ "active": true }`. No permitas que la app cliente cree o cambie membresías. El UID se obtiene en Authentication. La cuenta solo puede escribir si está activa en esa organización.
 6. La organización local ya está configurada. La clave `firebaseOrganizationId` en `local.properties` contiene el ID de proyecto y el archivo no se publica. La URL del backend sigue siendo configurable allí:
@@ -101,6 +101,6 @@ Si una clave, token, archivo de servicio o URL privada se publica accidentalment
 - [Firebase App Distribution](https://firebase.google.com/docs/app-distribution)
 - [Habilitar servicios de Google Cloud](https://cloud.google.com/service-usage/docs/enable-disable)
 
-## Después de habilitar la API
+## Estado actual y continuación
 
-Una vez habilitada `firestore.googleapis.com`, avisa para completar la creación de Firestore, desplegar reglas e índices, activar Email/Password y preparar la distribución interna. La API se habilita una vez por proyecto; las próximas operaciones se hacen con Firebase CLI. No compartas códigos de inicio de sesión, tokens de servicio ni contraseñas por el chat.
+Cuando el selector muestre `southamerica-west1`, continúa con modo de producción y el ID `(default)`. Después, vuelve a autenticar Firebase CLI con `firebase login --reauth` y avisa para desplegar reglas e índices, activar Email/Password, crear la cuenta/membresía de prueba y preparar la distribución interna. No compartas códigos de inicio de sesión, tokens de servicio ni contraseñas por el chat.

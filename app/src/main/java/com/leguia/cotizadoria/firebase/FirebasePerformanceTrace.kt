@@ -3,7 +3,8 @@ package com.leguia.cotizadoria.firebase
 import com.google.firebase.perf.FirebasePerformance
 import com.google.firebase.perf.metrics.Trace
 
-fun interface TraceSession {
+interface TraceSession {
+    fun putMetric(name: String, value: Long)
     fun stop()
 }
 
@@ -12,7 +13,10 @@ fun interface TraceRecorder {
 }
 
 object NoOpTraceRecorder : TraceRecorder {
-    override fun start(name: String) = TraceSession { }
+    override fun start(name: String) = object : TraceSession {
+        override fun putMetric(name: String, value: Long) = Unit
+        override fun stop() = Unit
+    }
 }
 
 class FirebaseTraceRecorder(
@@ -21,6 +25,9 @@ class FirebaseTraceRecorder(
     override fun start(name: String): TraceSession {
         val trace: Trace = performance.newTrace(name)
         trace.start()
-        return TraceSession { trace.stop() }
+        return object : TraceSession {
+            override fun putMetric(name: String, value: Long) = trace.putMetric(name, value)
+            override fun stop() = trace.stop()
+        }
     }
 }

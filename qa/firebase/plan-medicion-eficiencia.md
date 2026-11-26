@@ -20,11 +20,11 @@ ISO/IEC 9126-1:2001 está retirada. Si la matriz del curso exige esa edición, c
 
 `AUT` no se propone como variable mediadora. La matriz completa y la aprobación del asesor no están adjuntas al repositorio; este archivo no cambia objetivos, hipótesis, instrumento ni matriz oficial.
 
-## Campos mínimos para cada ensayo técnico
+## Registro técnico exportable
 
-Registra una fila por ejecución real de una prueba, con:
+La plantilla vacía `qa/data/technical_efficiency_runs_template.csv` tiene una fila por métrica medida en una repetición. Completa solo después de medir en dispositivo; no contiene datos simulados. Usa un `run_id` aleatorio por repetición, `phase` como `pre` o `post` solo cuando lo haya asignado el protocolo aprobado y un `operator_code_anonymous` no reversible.
 
-`test_run_id, test_case_id, timestamp_utc, app_version, git_commit, device_model, android_api, app_build_type, network_type, network_condition, battery_level_percent, scenario, repetitions, measured_metric, measured_value, unit, pass_fail, threshold_id, operator_code_anonymous, notes_without_personal_data`
+Una misma repetición puede generar filas separadas `cpu_percent`, `memory_rss_kib`, `network_rx_bytes`, `network_tx_bytes` y `duration_ms`, cada una con su `source_tool` real. No copies memoria ni CPU desde Firebase Performance; deben venir de los registros Android Profiler/Perfetto. `threshold_value`, `threshold_id` y `outcome` se dejan vacíos hasta que el asesor apruebe criterios. La plantilla no debe rellenarse con valores de ejemplo para la tesis.
 
 No almacenar email, UID de Firebase, número de teléfono, nombre de cliente, texto libre, token, precio real o identificadores publicitarios en el dataset analítico. Para registros comerciales se usa el exportador CSV local minimizado; el origen debe quedar etiquetado como Android y el período debe seguir el protocolo del estudio.
 
@@ -38,6 +38,16 @@ No almacenar email, UID de Firebase, número de teléfono, nombre de cliente, te
 6. Calcular cumplimiento únicamente cuando exista una meta aprobada: `100 × cantidad de ejecuciones válidas que cumplen / cantidad total de ejecuciones válidas evaluadas`.
 7. Evaluar exactitud con una persona revisora y regla definida antes de observar el resultado; cuando sea posible, conservar revisión doble y adjudicación. No transformar los cambios de IA en una medida de exactitud.
 8. Guardar exportaciones y capturas dentro de `docs/tesis/evidencias/` sin datos identificables, junto al commit y configuración de prueba.
+
+### Captura técnica con herramientas Android oficiales
+
+1. Usa un teléfono físico, anota fabricante/modelo, versión Android/API, variante, commit, nivel de batería y tipo/condición de red. Para resultados comparables ejecuta un build `profileable` cercano a `release`; no presentes la depuración instrumentada como medición de producción. La guía oficial de Android recomienda perfilar una variante release con `profileable` cuando se busca bajo overhead.
+2. Abre **View → Tool Windows → Profiler**, selecciona el proceso `com.leguia.cotizadoria` y registra una sesión que incluya una cotización completa. Usa CPU/System Trace para actividad de CPU e hilos y la vista de memoria/RSS para RAM; exporta el archivo de grabación o conserva una captura con dispositivo y escala legibles.
+3. Para red, limita la selección temporal a la misma operación y registra bytes recibidos y enviados desde el Network Profiler/inspector compatible con la versión de Android Studio instalada. Guarda ambos sentidos por separado. El conteo de red no sustituye CPU/RAM ni el tiempo de cotización.
+4. Repite el mismo caso y condiciones según el número de repeticiones aprobado. Deja que el profiler complete el parseo antes de guardar la evidencia. Anota cambios de red, temperatura, batería o actividad de fondo; no borres ejecuciones, márcalas como excluidas y documenta el motivo según el protocolo.
+5. Exporta una fila por métrica/repetición a `technical_efficiency_runs_template.csv`, con referencia al archivo/captura del profiler. Evita incluir payloads, textos del cliente, correo, UID, tokens o datos de cuenta.
+
+Fuentes de los instrumentos: [Android Studio Profiler](https://developer.android.com/studio/profile/), [vista de CPU y memoria en vivo](https://developer.android.com/studio/profile/inspect-app-live) y [sistema de trazas](https://developer.android.com/studio/profile/cpu-profiler). La consola Firebase Performance ofrece trazas agregadas y tiempos de red para el SDK; no sustituye estas mediciones de recursos en el dispositivo.
 
 ## Tabla de umbrales y evidencia
 
@@ -60,3 +70,4 @@ El directorio `firebase-tests/` usa Firebase Local Emulator Suite para comprobar
 - [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon)
 - [Android Studio Profiler](https://developer.android.com/studio/profile)
 - [Perfetto](https://perfetto.dev/docs/)
+- [Plantilla vacía de ejecuciones técnicas](../data/technical_efficiency_runs_template.csv)

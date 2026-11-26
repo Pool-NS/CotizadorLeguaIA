@@ -1,11 +1,11 @@
 # Evidencia técnica para el capítulo IV
 
 **Alcance:** auditoría del código de este repositorio y mejoras de instrumentación, interfaz y documentación.  
-**Rama de auditoría documentada:** `codex/tesis-audit`.
-**Commit de implementación auditado:** `cc07eab` (`feat: improve thesis evidence and cotizador UX`).
+**Rama inicial de auditoría:** `codex/tesis-audit`.
+**Commit base de auditoría:** `cc07eab` (`feat: improve thesis evidence and cotizador UX`).
 **Versión Android observada:** 1.5.0, `versionCode` 8.  
-**Esquema Room en la auditoría original:** versión 9; la rama `codex/firebase-integration` añade migración a versión 10, aún pendiente de compilación.
-**Fecha de auditoría:** 2026-11-19.
+**Estado posterior:** la rama `codex/firebase-integration` migra Room a versión 10 y sus pruebas/compilación se registran en `04_matriz_pruebas_evidencia.md`.
+**Fecha de auditoría inicial:** 2026-11-19; actualización Firebase: 2026-11-25.
 
 La auditoría inicial corresponde al commit base `72801f8` y a `cc07eab`; esos resultados no son resultados de compilación de la rama Firebase. El estado de integración, despliegue y pruebas cloud se informa por separado en los documentos enlazados abajo. No hay confirmación de despliegue Firebase en un proyecto real.
 
@@ -22,3 +22,5 @@ La auditoría inicial corresponde al commit base `72801f8` y a `cc07eab`; esos r
 ## Cómo interpretar esta evidencia
 
 Las compilaciones y pruebas de software evalúan propiedades técnicas del prototipo. No demuestran por sí mismas que el proceso comercial haya mejorado. El pretest y posttest deben provenir de observaciones reales autorizadas y del instrumento aprobado. No se generan registros de campo ni resultados estadísticos sintéticos.
+
+El estado de creación de Firestore, mediciones Android en dispositivo y distribución de ensayo se documenta como pendiente hasta disponer de evidencia directa; la configuración del proyecto Firebase no equivale a un despliegue verificado.

@@ -1,0 +1,1 @@
+run_id,test_case_id,phase,timestamp_utc,app_version,git_commit,device_model,android_api,build_variant,scenario,network_type,network_condition,battery_percent,metric_name,metric_value,metric_unit,source_tool,trace_name,threshold_id,threshold_value,threshold_unit,threshold_approval_ref,outcome,operator_code_anonymous,notes_without_personal_data

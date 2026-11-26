@@ -11,6 +11,8 @@
 | Cumplimiento declarado por operador | `PantallaResumenPrecio.kt`, `CotizacionEntity.kt`, `PantallaPanelAdmin.kt` | Cobertura de UI pendiente | Lógica revisada; fórmula y denominador visibles | Parcial; no reemplaza observación independiente |
 | Inventario: saldo, presentación, ingreso, salida y ajuste | `PantallaInventario.kt`, `StockMovementRules.kt`, `WorkflowDaos.kt` | `StockMovementRulesTest` | `testDebugUnitTest` | Reglas unitarias; persistencia Room/UI manual pendiente |
 | Exportar datos anonimizados y versionados | `QuoteCsvExport.kt`, `MainActivity.kt` | `QuoteCsvExportTest` | `testDebugUnitTest` | CSV probado; debe validar instrumento y privacidad antes de compartir |
+| Registrar trazas de interpretación, guardado Room y sincronización Firestore | `FirebasePerformanceTrace.kt`, `BackendGenerativeAiClient.kt`, `CotizadorViewModel.kt`, `FirebaseCloudRepository.kt` | Pruebas unitarias del cliente y compilación | Compilación `FIREBASE_ENABLED=true`; ejecución en dispositivo y panel Firebase aún pendientes | Implementado; no hay traza/registro de nube demostrado todavía |
+| Capturar CPU, RSS/memoria y bytes de red | `qa/data/technical_efficiency_runs_template.csv`, `qa/firebase/plan-medicion-eficiencia.md` | Protocolo con Profiler/Perfetto | No ejecutado en dispositivo físico | Pendiente de medición real y aprobación de umbrales |
 | Promedio y mediana de tiempo | `QuoteDurationMetrics.kt`, `PantallaPanelAdmin.kt` | `QuoteDurationMetricsTest` (muestra par, tiempos no válidos, vacío) | `testDebugUnitTest` | Función pura comprobada; marca temporal sigue siendo declaración operativa |
 | Navegación y accesibilidad | `MainActivity.kt`, pantallas Compose | Test instrumentado Compose aún no implementado | No hay dispositivo/AVD conectado | Pendiente de prueba visual y TalkBack |
 | Seguridad local del panel | `AdminPinHasher.kt`, `PantallaLoginAdmin.kt` | `AdminPinHasherTest` | `testDebugUnitTest` | Lógica local probada; no es identidad de red |
@@ -19,20 +21,18 @@
 
 `qa/iso29119/test_cases_200.csv` contiene casos documentados; su nombre no significa que 200 ejecuciones se hayan realizado. TDD previo no se afirma sin evidencia histórica.
 
-## Resultado de ejecución local
+## Resultado de ejecución local (25-11-2026)
 
-Resultados de la ejecución local del 19-11-2026, sobre la rama `codex/tesis-audit`, implementación `cc07eab`:
+Resultados sobre la rama `codex/firebase-integration`, con proyecto Firebase Android configurado localmente. El archivo `google-services.json` está excluido de Git:
 
-- Android `testDebugUnitTest`: **34 pruebas, 0 fallos y 0 errores**, según los XML de Gradle bajo `app/build/test-results/testDebugUnitTest/`.
-- Android `lintDebug`: **BUILD SUCCESSFUL, 0 errores y 32 advertencias**. Las advertencias incluyen nivel de `targetSdk`, dependencias con versiones más recientes disponibles y uso de KAPT donde Room también soporta KSP. No se ocultaron mediante exclusiones.
-- Android `assembleDebug`: **BUILD SUCCESSFUL**; APK generado en `app/build/outputs/apk/debug/app-debug.apk` (10 267 928 bytes). Es un APK de depuración, no un paquete firmado de publicación.
+- Android `testDebugUnitTest`: **34 pruebas, 0 fallos y 0 errores**, según XML de Gradle.
+- Android `lintDebug`: **BUILD SUCCESSFUL**.
+- Android `assembleDebug`: **BUILD SUCCESSFUL**; APK generado en `app/build/outputs/apk/debug/app-debug.apk` (19 299 169 bytes). Es un APK de depuración para ensayo, no una publicación de producción.
 - Backend: el comando local `python -m unittest discover -s tests -v` no produjo salida ni finalizó en el tiempo disponible y se interrumpió. Por ello **no se reporta como aprobado**. La ejecución de tests backend del workflow remoto no forma parte de esta comprobación local.
 - Capturas: no disponibles; no se detectó ningún teléfono conectado ni AVD configurado.
 
 La prueba del proveedor Gemini es simulada en los tests backend; no prueba disponibilidad de red, clave, facturación o modelo en el proyecto del usuario. No se realizó una llamada real a Gemini en esta verificación.
 
-## Estado de la rama Firebase
+## Estado de Firebase
 
-La rama `codex/firebase-integration` agrega autenticación y sincronización opcional con Firestore, pruebas de reglas en emulador y un flujo manual de distribución. Al registrar esta nota no se ha compilado esa rama: el equipo carece de dependencias Gradle completas y el acceso de red a repositorios Maven no terminó. La prueba local de reglas también está pendiente; las dependencias actuales requieren Node.js 24.12 o superior y el equipo tiene Node 22.18. El workflow CI se configuró con Node 24.12 para ejecutarla en GitHub Actions.
-
-Firebase CLI no tiene autenticación local y el repositorio carece de `google-services.json`, ID de proyecto y cuentas de servicio; por ello no se desplegaron reglas ni se distribuyó un APK. El emulador/CI puede comprobar las reglas antes de usar un proyecto real. Estos estados son pendientes, no aprobaciones ni fallos funcionales medidos.
+El proyecto `cotizador-leguia-poolns-2026` y la app Android están creados. Firebase Console abre el asistente de base, pero el selector de región está vacío; no se ha creado Firestore ni hay una prueba real de lectura/escritura remota. La sesión CLI actual requiere `firebase login --reauth`. Reglas, usuarios, membresías, App Distribution y capturas de Firestore están pendientes. La traza local de guardado solo acredita medición de Room, no persistencia remota.
